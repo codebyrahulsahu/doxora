@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Doxora</string>
 
-    <string name="your_piles">Vos Piles</string>
+    <string name="your_piles">Vos Hubs</string>
     <string name="all_documents">Tous les documents</string>
     <string name="search_your_documents">Rechercher dans vos documents</string>
     <string name="user_document_unsaved_changes">Vous avez un document avec des modifications non enregistrées.</string>

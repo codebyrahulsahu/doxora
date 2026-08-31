@@ -624,7 +624,12 @@ private fun AboutSupportSection(
     onHelp: () -> Unit,
     onPrivacy: () -> Unit
 ) {
-    SettingsSection(modifier = modifier, title = stringResource(R.string.about_support)) {
+    SettingsSection(
+        modifier = modifier,
+        title = stringResource(R.string.about_support),
+        collapsible = true,
+        initiallyExpanded = false
+    ) {
         SupportContactsCard(
             onOpenUrl = onOpenUrl,
             onSendEmail = onSendEmail

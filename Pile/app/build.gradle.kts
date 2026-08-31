@@ -124,6 +124,9 @@ dependencies {
     // Text recognition (OCR)
     implementation(libs.mlkit.text.recognition)
 
+    // Built in document scanner (used by "Take a photo")
+    implementation(libs.mlkit.document.scanner)
+
     // Logging
     implementation(libs.napier)
 

@@ -187,6 +187,21 @@ class LocalBackupRepositoryImpl(
                             zip.closeEntry()
                         }
                     }
+
+                    // Every hub picture travels with the backup as well
+                    settings.hubPicturePaths.values.distinct().forEach { path ->
+                        val hubPictureFile = fileRepository.getProfilePictureFile(path)
+
+                        if (hubPictureFile.exists()) {
+                            zip.putNextEntry(
+                                ZipEntry(
+                                    "$BACKUP_FILES_FOLDER/profile_pictures/${hubPictureFile.name}"
+                                )
+                            )
+                            hubPictureFile.inputStream().use { input -> input.copyTo(zip) }
+                            zip.closeEntry()
+                        }
+                    }
                 }
 
                 val outputStream = contentResolver.openOutputStream(uri)

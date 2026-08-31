@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Doxora</string>
 
-    <string name="your_piles">您的堆叠</string>
+    <string name="your_piles">您的中心</string>
     <string name="all_documents">所有文档</string>
     <string name="search_your_documents">搜索文档</string>
     <string name="user_document_unsaved_changes">您有未保存更改的文档。</string>

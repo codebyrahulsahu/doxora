@@ -1,8 +1,6 @@
 package es.pile.features.settings.ui.composables
 
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -12,21 +10,14 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import es.pile.R
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import es.pile.core.ui.composables.PictureAvatar
 import java.io.File
 
 private val DEFAULT_AVATAR_SIZE = 56.dp
@@ -47,52 +38,14 @@ fun ProfilePictureAvatar(
     size: Dp = DEFAULT_AVATAR_SIZE,
     onClick: (() -> Unit)? = null,
 ) {
-    val placeholderIcon: ImageVector = Icons.Filled.Person
-
-    val imageBitmap by produceState<ImageBitmap?>(
-        initialValue = null,
-        key1 = profilePictureFile
-    ) {
-        value = profilePictureFile?.let { file ->
-            withContext(Dispatchers.IO) {
-                runCatching { BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap() }
-                    .getOrNull()
-            }
-        }
-    }
-
-    Box(
-        modifier = modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .then(
-                if (onClick != null) {
-                    Modifier.clickable(onClick = onClick)
-                } else {
-                    Modifier
-                }
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        val bitmap = imageBitmap
-
-        if (bitmap != null) {
-            androidx.compose.foundation.Image(
-                bitmap = bitmap,
-                contentDescription = stringResource(R.string.profile_picture),
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.size(size)
-            )
-        } else {
-            Icon(
-                imageVector = placeholderIcon,
-                contentDescription = stringResource(R.string.profile_picture),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(size * 0.54f)
-            )
-        }
-    }
+    PictureAvatar(
+        pictureFile = profilePictureFile,
+        contentDescription = stringResource(R.string.profile_picture),
+        modifier = modifier,
+        size = size,
+        placeholderIcon = Icons.Filled.Person,
+        onClick = onClick
+    )
 }
 
 /**

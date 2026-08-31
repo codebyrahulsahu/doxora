@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import es.pile.DocumentModel
 import es.pile.R
 import es.pile.core.domain.models.DocumentCoverItem
+import es.pile.core.domain.models.DocumentExportFormat
 import es.pile.core.domain.models.DocumentViewMode
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentLockRepository
@@ -19,6 +20,7 @@ import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
 import es.pile.core.ui.util.UiText
 import es.pile.features.documentDetail.domain.helper.DocumentOpener
 import es.pile.features.documentDetail.domain.useCases.MoveDocumentToTrashUseCase
+import es.pile.features.documentDetail.domain.useCases.export.ExportDocumentImagesUseCase
 import es.pile.features.documentDetail.domain.useCases.export.ExportDocumentUseCase
 import es.pile.features.documentDetail.domain.useCases.export.GetPdfUriUseCase
 import es.pile.features.home.domain.models.TemporaryDocumentBackup
@@ -52,6 +54,7 @@ class HomeViewModel(
     private val moveDocumentToTrashUseCase: MoveDocumentToTrashUseCase,
     private val getPdfUriUseCase: GetPdfUriUseCase,
     private val exportDocumentUseCase: ExportDocumentUseCase,
+    private val exportDocumentImagesUseCase: ExportDocumentImagesUseCase,
     private val documentOpener: DocumentOpener
 ) : ViewModel() {
     private var _state = MutableStateFlow(HomeState())
@@ -79,7 +82,16 @@ class HomeViewModel(
         }
         viewModelScope.launch {
             settingsRepository.userSettings.collect { settings ->
-                _state.update { it.copy(viewMode = settings.documentViewMode) }
+                val hubPictureFiles = settings.hubPicturePaths
+                    .mapValues { (_, path) -> fileRepository.getProfilePictureFile(path) }
+                    .filterValues { file -> file.exists() }
+
+                _state.update {
+                    it.copy(
+                        viewMode = settings.documentViewMode,
+                        hubPictureFiles = hubPictureFiles
+                    )
+                }
             }
         }
         viewModelScope.launch {
@@ -160,6 +172,10 @@ class HomeViewModel(
 
             HomeEvent.OnCameraUriConsumed -> dismissCameraUri()
 
+            HomeEvent.OnScannerUnavailable -> _state.update {
+                it.copy(errorMessage = UiText.StringResource(R.string.scanner_unavailable))
+            }
+
             HomeEvent.OnConfirmImport -> {
                 _state.update { it.copy(showDraftWarning = false) }
                 pendingImportAction?.invoke()
@@ -208,7 +224,10 @@ class HomeViewModel(
 
             HomeEvent.OnSelectionCleared -> clearSelection()
 
-            HomeEvent.OnExportSelectedClicked -> exportSelectedDocuments()
+            is HomeEvent.OnExportSelectedClicked -> exportSelectedDocuments(
+                event.format,
+                event.destinationFolderUri
+            )
 
             HomeEvent.OnShareSelectedClicked -> shareSelectedDocuments()
 
@@ -233,9 +252,15 @@ class HomeViewModel(
     }
 
     /**
-     * Exports every selected document as a PDF file to the device's Downloads folder.
+     * Exports every selected document with the [format] chosen by the user.
+     *
+     * @param destinationFolderUri Folder the user granted access to the first
+     * time something was exported, or null to use the Downloads directory.
      */
-    private fun exportSelectedDocuments() {
+    private fun exportSelectedDocuments(
+        format: DocumentExportFormat,
+        destinationFolderUri: Uri?
+    ) {
         viewModelScope.launch {
             val documents = selectedDocuments()
             if (documents.isEmpty()) return@launch
@@ -244,20 +269,40 @@ class HomeViewModel(
 
             var exportedCount = 0
             documents.forEach { document ->
-                runCatching { exportDocumentUseCase(document) }
-                    .onSuccess { exportedCount++ }
+                runCatching {
+                    when (format) {
+                        DocumentExportFormat.PDF ->
+                            exportDocumentUseCase(document, destinationFolderUri).getOrThrow()
+
+                        DocumentExportFormat.JPG,
+                        DocumentExportFormat.PNG ->
+                            exportDocumentImagesUseCase(document, format, destinationFolderUri)
+                    }
+                }.onSuccess { exportedCount++ }
+                    .onFailure { error -> Napier.e("Error exporting document", error) }
 
                 Napier.d { "Exported ${exportedCount}/${documents.size} documents" }
             }
+
+            val destinationIsFolder = destinationFolderUri != null
 
             _state.update {
                 it.copy(
                     isSelectionWorking = false,
                     selectedDocumentIds = emptySet(),
-                    errorMessage = if (exportedCount > 0) {
-                        UiText.StringResource(R.string.documents_exported, exportedCount)
-                    } else {
-                        UiText.StringResource(R.string.error_exporting_documents)
+                    errorMessage = when {
+                        exportedCount == 0 ->
+                            UiText.StringResource(R.string.error_exporting_documents)
+
+                        destinationIsFolder -> UiText.StringResource(
+                            R.string.documents_exported_to_folder,
+                            exportedCount
+                        )
+
+                        else -> UiText.StringResource(
+                            R.string.documents_exported,
+                            exportedCount
+                        )
                     }
                 )
             }

@@ -321,7 +321,7 @@ class DocumentDetailViewModel(
 
                 when (format) {
                     DocumentExportFormat.PDF -> {
-                        exportDocumentUseCase(document, destinationFolderUri)
+                        exportDocumentUseCase(document, destinationFolderUri).getOrThrow()
                         _state.update {
                             it.copy(
                                 userMessage = UiText.StringResource(R.string.pdf_exported_successfully)

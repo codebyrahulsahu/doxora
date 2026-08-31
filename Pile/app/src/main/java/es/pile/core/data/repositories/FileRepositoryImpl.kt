@@ -325,9 +325,20 @@ class FileRepositoryImpl(
             val safeName = sanitizeFileName(publicName, extension)
             val displayName = safeName.removeSuffix(extension)
 
+            // A tree URI (the one returned by the folder picker) has to be
+            // converted into its document URI before creating children in it.
+            val parentDocumentUri = if (DocumentsContract.isTreeUri(folderUri)) {
+                DocumentsContract.buildDocumentUriUsingTree(
+                    folderUri,
+                    DocumentsContract.getTreeDocumentId(folderUri)
+                )
+            } else {
+                folderUri
+            }
+
             val documentUri = DocumentsContract.createDocument(
                 contentResolver,
-                folderUri,
+                parentDocumentUri,
                 mimeType,
                 displayName
             ) ?: throw IOException("The file could not be created in the selected folder")
