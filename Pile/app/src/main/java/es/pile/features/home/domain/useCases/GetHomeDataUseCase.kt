@@ -31,12 +31,14 @@ class GetHomeDataUseCase(
      * @property documents The list of persistent documents (excluding temporary ones).
      * @property temporaryDocument The single document currently in [es.pile.core.domain.models.DocumentStatusConstants.TEMPORARY] state, if it exists.
      * @property coloredPileIds A list of IDs for piles that are currently linked to at least one document.
+     * @property pileDocumentCounts A map from pile ID to the number of persistent documents inside that pile.
      */
     data class HomeData(
         val piles: List<PileModel>,
         val documents: List<DocumentModel>,
         val temporaryDocument: DocumentModel?,
-        val coloredPileIds: List<String>
+        val coloredPileIds: List<String>,
+        val pileDocumentCounts: Map<String, Int> = emptyMap()
     )
 
     /**
@@ -52,12 +54,17 @@ class GetHomeDataUseCase(
             val temporaryDocument = documents.find { it.documentStatus == TEMPORARY }
             val coloredPileIds = documents.flatMap { it.documentPileIds }.distinct()
             val persistentDocuments = documents.filter { it.documentStatus != TEMPORARY }
+            val pileDocumentCounts = persistentDocuments
+                .flatMap { it.documentPileIds }
+                .groupingBy { it }
+                .eachCount()
 
             HomeData(
                 piles = piles,
                 documents = persistentDocuments,
                 temporaryDocument = temporaryDocument,
-                coloredPileIds = coloredPileIds
+                coloredPileIds = coloredPileIds,
+                pileDocumentCounts = pileDocumentCounts
             )
         }
     }

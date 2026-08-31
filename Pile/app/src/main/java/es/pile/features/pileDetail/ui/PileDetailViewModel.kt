@@ -11,6 +11,7 @@ import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.repositories.PileModelRepository
+import es.pile.core.domain.useCases.GetDocumentSizesUseCase
 import es.pile.core.domain.useCases.RequestBitmapLoadUseCase
 import es.pile.core.ui.util.UiText
 import es.pile.features.home.domain.useCases.CreateDocumentUseCase
@@ -33,6 +34,7 @@ class PileDetailViewModel(
     private val createDocumentUseCase: CreateDocumentUseCase,
     private val updatePileUseCase: UpdatePileUseCase,
     private val deletePileUseCase: DeletePileUseCase,
+    private val getDocumentSizesUseCase: GetDocumentSizesUseCase,
     private val pileModelRepository: PileModelRepository,
     private val documentModelRepository: DocumentModelRepository,
     private val bitmapCacheRepository: BitmapCacheRepository,
@@ -76,6 +78,9 @@ class PileDetailViewModel(
                         temporaryDocument = temporaryDocument
                     )
                 }
+
+                val documentSizes = getDocumentSizesUseCase(pileDocuments)
+                _state.update { it.copy(documentSizes = documentSizes) }
             }.collect()
         }
     }
@@ -124,6 +129,10 @@ class PileDetailViewModel(
             PileDetailEvent.OnDismissDraftWarning -> {
                 _state.update { it.copy(showDraftWarning = false) }
                 pendingImportAction = null
+            }
+
+            is PileDetailEvent.OnSortOrderChanged -> {
+                _state.update { it.copy(sortOrder = event.sortOrder) }
             }
 
             PileDetailEvent.OnErrorDismissed -> _state.update { it.copy(errorMessage = null) }

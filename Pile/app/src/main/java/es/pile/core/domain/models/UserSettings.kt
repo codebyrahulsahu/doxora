@@ -8,5 +8,9 @@ data class UserSettings(
     val isMaterialColor: Boolean = true,
     val isLocalAiEnabled: Boolean = false,
     val selectedModel: String? = null,
-    val imageResolution: ImageResolution = ImageResolution.ORIGINAL
+    val imageResolution: ImageResolution = ImageResolution.ORIGINAL,
+    val profileName: String? = null,
+    val profileEmail: String? = null,
+    val isCloudBackupEnabled: Boolean = false,
+    val isAppLockEnabled: Boolean = false
 )

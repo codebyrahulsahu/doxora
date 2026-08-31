@@ -53,4 +53,28 @@ class DataStoreSettingsRepository(
             dataStore.updateData { it.copy(imageResolution = resolution) }
         }
     }
+
+    override suspend fun updateProfileName(name: String) {
+        withContext(ioDispatcher) {
+            dataStore.updateData { it.copy(profileName = name) }
+        }
+    }
+
+    override suspend fun updateProfileEmail(email: String) {
+        withContext(ioDispatcher) {
+            dataStore.updateData { it.copy(profileEmail = email) }
+        }
+    }
+
+    override suspend fun updateCloudBackup(enable: Boolean) {
+        withContext(ioDispatcher) {
+            dataStore.updateData { it.copy(isCloudBackupEnabled = enable) }
+        }
+    }
+
+    override suspend fun updateAppLock(enable: Boolean) {
+        withContext(ioDispatcher) {
+            dataStore.updateData { it.copy(isAppLockEnabled = enable) }
+        }
+    }
 }

@@ -21,7 +21,11 @@ class SettingsOverviewViewModel(
                 isMaterialColor = userSettings.isMaterialColor,
                 isLocalAiEnabled = userSettings.isLocalAiEnabled,
                 selectedModel = userSettings.selectedModel,
-                imageResolution = userSettings.imageResolution
+                imageResolution = userSettings.imageResolution,
+                profileName = userSettings.profileName,
+                profileEmail = userSettings.profileEmail,
+                isCloudBackupEnabled = userSettings.isCloudBackupEnabled,
+                isAppLockEnabled = userSettings.isAppLockEnabled
             )
         }
         .stateIn(
@@ -40,6 +44,12 @@ class SettingsOverviewViewModel(
             SettingsOverviewEvent.OnMaterialColorToggled -> updateMaterialColor()
 
             SettingsOverviewEvent.OnLocalAiToggled -> updateLocalAi()
+
+            is SettingsOverviewEvent.OnProfileUpdated -> updateProfile(event.name, event.email)
+
+            SettingsOverviewEvent.OnCloudBackupToggled -> updateCloudBackup()
+
+            SettingsOverviewEvent.OnAppLockToggled -> updateAppLock()
         }
     }
 
@@ -58,6 +68,25 @@ class SettingsOverviewViewModel(
     private fun updateLocalAi() {
         viewModelScope.launch {
             settingsRepository.updateLocalAi(!state.value.isLocalAiEnabled)
+        }
+    }
+
+    private fun updateProfile(name: String, email: String) {
+        viewModelScope.launch {
+            settingsRepository.updateProfileName(name)
+            settingsRepository.updateProfileEmail(email)
+        }
+    }
+
+    private fun updateCloudBackup() {
+        viewModelScope.launch {
+            settingsRepository.updateCloudBackup(!state.value.isCloudBackupEnabled)
+        }
+    }
+
+    private fun updateAppLock() {
+        viewModelScope.launch {
+            settingsRepository.updateAppLock(!state.value.isAppLockEnabled)
         }
     }
 }

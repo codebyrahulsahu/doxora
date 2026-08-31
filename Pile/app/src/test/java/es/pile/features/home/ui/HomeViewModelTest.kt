@@ -5,11 +5,14 @@ import es.pile.PileModel
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.useCases.CreatePileUseCase
+import es.pile.core.domain.useCases.GetDocumentSizesUseCase
 import es.pile.core.domain.useCases.RequestBitmapLoadUseCase
 import es.pile.features.home.domain.schedulers.CleanupScheduler
 import es.pile.features.home.domain.useCases.CreateDocumentUseCase
 import es.pile.features.home.domain.useCases.GetHomeDataUseCase
 import es.pile.features.home.domain.useCases.ManageTemporaryDocumentUseCase
+import io.mockk.any
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +36,8 @@ class HomeViewModelTest {
     private val getHomeDataUseCase: GetHomeDataUseCase = mockk()
     private val createPileUseCase: CreatePileUseCase = mockk()
     private val requestBitmapLoadUseCase: RequestBitmapLoadUseCase = mockk()
+    private val getDocumentSizesUseCase: GetDocumentSizesUseCase =
+        mockk(relaxed = true)
     private val cleanupScheduler: CleanupScheduler = mockk()
     private val bitmapCacheRepository: BitmapCacheRepository = mockk(relaxed = true)
     private val fileRepository: FileRepository = mockk()
@@ -61,6 +66,7 @@ class HomeViewModelTest {
             coloredPileIds = listOf("p1")
         )
         every { getHomeDataUseCase() } returns flowOf(homeData)
+        coEvery { getDocumentSizesUseCase(any()) } returns emptyMap()
 
         // When
         val viewModel = HomeViewModel(
@@ -69,6 +75,7 @@ class HomeViewModelTest {
             getHomeDataUseCase,
             createPileUseCase,
             requestBitmapLoadUseCase,
+            getDocumentSizesUseCase,
             cleanupScheduler,
             bitmapCacheRepository,
             fileRepository

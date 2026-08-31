@@ -1,17 +1,31 @@
 package es.pile.features.settings.ui.overview
 
+import android.content.pm.PackageManager
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.S
+import android.os.Build.VERSION_CODES.TIRAMISU
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -19,10 +33,14 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -87,7 +105,8 @@ fun SettingsOverviewContent(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     var showAppThemeDialog by rememberSaveable { mutableStateOf(false) }
-
+    var showEditProfileDialog by rememberSaveable { mutableStateOf(false) }
+    var supportDialog by remember { mutableStateOf(SupportDialog.NONE) }
 
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -106,26 +125,38 @@ fun SettingsOverviewContent(
                     .padding(padding)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
-                    .padding(top = 16.dp, bottom = 100.dp),
+                    .padding(top = 16.dp, bottom = 40.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                UserAccountSection(
+                    profileName = state.profileName,
+                    profileEmail = state.profileEmail,
+                    onEditProfile = { showEditProfileDialog = true }
+                )
+
                 AppearanceSection(
                     theme = state.theme,
                     isMaterialColor = state.isMaterialColor,
                     onAppThemeChange = { showAppThemeDialog = true },
                     onMaterialColorToggle = { onEvent(SettingsOverviewEvent.OnMaterialColorToggled) }
                 )
-//                  todo implement AI
-//                AISection(
-//                    isLocalAiEnabled = state.isLocalAiEnabled,
-//                    selectedModel = state.selectedModel,
-//                    onToggleLocalAi = { onEvent(SettingsOverviewEvent.OnLocalAiToggled) },
-//                    onSelectLanguageModel = { }
-//                )
 
                 ResolutionSection(
                     imageResolution = state.imageResolution,
                     onResolutionChange = { onEvent(SettingsOverviewEvent.OnResolutionClicked) }
+                )
+
+                StorageSecuritySection(
+                    isCloudBackupEnabled = state.isCloudBackupEnabled,
+                    isAppLockEnabled = state.isAppLockEnabled,
+                    onCloudBackupToggle = { onEvent(SettingsOverviewEvent.OnCloudBackupToggled) },
+                    onAppLockToggle = { onEvent(SettingsOverviewEvent.OnAppLockToggled) }
+                )
+
+                AboutSupportSection(
+                    onAbout = { supportDialog = SupportDialog.ABOUT },
+                    onHelp = { supportDialog = SupportDialog.HELP },
+                    onPrivacy = { supportDialog = SupportDialog.PRIVACY }
                 )
             }
         }
@@ -142,6 +173,86 @@ fun SettingsOverviewContent(
                 showAppThemeDialog = false
             }
         )
+    }
+
+    if (showEditProfileDialog) {
+        EditProfileDialog(
+            initialName = state.profileName.orEmpty(),
+            initialEmail = state.profileEmail.orEmpty(),
+            onDismiss = { showEditProfileDialog = false },
+            onConfirm = { name, email ->
+                onEvent(SettingsOverviewEvent.OnProfileUpdated(name, email))
+                showEditProfileDialog = false
+            }
+        )
+    }
+
+    when (supportDialog) {
+        SupportDialog.NONE -> {}
+        SupportDialog.ABOUT -> AboutPileDialog(onDismiss = { supportDialog = SupportDialog.NONE })
+        SupportDialog.HELP -> HelpSupportDialog(onDismiss = { supportDialog = SupportDialog.NONE })
+        SupportDialog.PRIVACY -> PrivacyPolicyDialog(onDismiss = { supportDialog = SupportDialog.NONE })
+    }
+}
+
+@Composable
+private fun UserAccountSection(
+    modifier: Modifier = Modifier,
+    profileName: String?,
+    profileEmail: String?,
+    onEditProfile: () -> Unit
+) {
+    SettingsSection(modifier = modifier, title = stringResource(R.string.user_account)) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            )
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.person_24px),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = profileName?.takeIf { it.isNotBlank() }
+                            ?: stringResource(R.string.profile_name_default),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = profileEmail?.takeIf { it.isNotBlank() }
+                            ?: stringResource(R.string.profile_email_default),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                IconButton(onClick = onEditProfile) {
+                    Icon(
+                        painter = painterResource(R.drawable.edit_24px),
+                        contentDescription = stringResource(R.string.edit_profile),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -187,33 +298,6 @@ private fun AppearanceSection(
 }
 
 @Composable
-private fun AISection(
-    modifier: Modifier = Modifier,
-    isLocalAiEnabled: Boolean,
-    selectedModel: String?,
-    onToggleLocalAi: () -> Unit,
-    onSelectLanguageModel: () -> Unit
-) {
-    SettingsSection(modifier = modifier, title = stringResource(R.string.artificial_intelligence)) {
-        SettingsItem(
-            itemPosition = ItemPosition.TOP,
-            title = stringResource(R.string.activate_local_ai_tittle),
-            subtitle = stringResource(R.string.activate_local_ai_body),
-            checked = isLocalAiEnabled,
-            onAction = onToggleLocalAi
-        )
-
-        SettingsItem(
-            enabled = isLocalAiEnabled,
-            itemPosition = ItemPosition.BOTTOM,
-            title = stringResource(R.string.select_language_model),
-            subtitle = selectedModel ?: stringResource(R.string.no_model_selected),
-            onAction = onSelectLanguageModel
-        )
-    }
-}
-
-@Composable
 private fun ResolutionSection(
     modifier: Modifier = Modifier,
     imageResolution: ImageResolution,
@@ -232,6 +316,201 @@ private fun ResolutionSection(
             onAction = onResolutionChange
         )
     }
+}
+
+@Composable
+private fun StorageSecuritySection(
+    modifier: Modifier = Modifier,
+    isCloudBackupEnabled: Boolean,
+    isAppLockEnabled: Boolean,
+    onCloudBackupToggle: () -> Unit,
+    onAppLockToggle: () -> Unit
+) {
+    SettingsSection(modifier = modifier, title = stringResource(R.string.storage_security)) {
+        SettingsItem(
+            itemPosition = ItemPosition.TOP,
+            title = stringResource(R.string.cloud_backup),
+            subtitle = stringResource(R.string.cloud_backup_body),
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.cloud_24px),
+                    contentDescription = null
+                )
+            },
+            checked = isCloudBackupEnabled,
+            onAction = onCloudBackupToggle
+        )
+
+        SettingsItem(
+            itemPosition = ItemPosition.BOTTOM,
+            title = stringResource(R.string.app_lock),
+            subtitle = stringResource(R.string.app_lock_body),
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_privacy_lock),
+                    contentDescription = null
+                )
+            },
+            checked = isAppLockEnabled,
+            onAction = onAppLockToggle
+        )
+    }
+}
+
+@Composable
+private fun AboutSupportSection(
+    modifier: Modifier = Modifier,
+    onAbout: () -> Unit,
+    onHelp: () -> Unit,
+    onPrivacy: () -> Unit
+) {
+    SettingsSection(modifier = modifier, title = stringResource(R.string.about_support)) {
+        SettingsItem(
+            itemPosition = ItemPosition.TOP,
+            title = stringResource(R.string.about_pile),
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.info_24px),
+                    contentDescription = null
+                )
+            },
+            onAction = onAbout
+        )
+
+        SettingsItem(
+            itemPosition = ItemPosition.MIDDLE,
+            title = stringResource(R.string.help_support),
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.mail_24px),
+                    contentDescription = null
+                )
+            },
+            onAction = onHelp
+        )
+
+        SettingsItem(
+            itemPosition = ItemPosition.BOTTOM,
+            title = stringResource(R.string.privacy_policy),
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_privacy_shield),
+                    contentDescription = null
+                )
+            },
+            onAction = onPrivacy
+        )
+    }
+}
+
+@Composable
+private fun EditProfileDialog(
+    initialName: String,
+    initialEmail: String,
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, email: String) -> Unit
+) {
+    var name by rememberSaveable { mutableStateOf(initialName) }
+    var email by rememberSaveable { mutableStateOf(initialEmail) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.edit_profile)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.profile_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text(stringResource(R.string.profile_email)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(name.trim(), email.trim()) }) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun AboutPileDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val version = remember {
+        runCatching {
+            if (SDK_INT >= TIRAMISU) {
+                context.packageManager
+                    .getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
+                    .versionName
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName
+            }
+        }.getOrNull().orEmpty()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.about_pile)) },
+        text = {
+            Column {
+                Text(stringResource(R.string.about_pile_body))
+                Text(
+                    text = stringResource(R.string.app_version, version),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.ok))
+            }
+        }
+    )
+}
+
+@Composable
+private fun HelpSupportDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.help_support)) },
+        text = { Text(stringResource(R.string.help_support_body)) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.ok))
+            }
+        }
+    )
+}
+
+@Composable
+private fun PrivacyPolicyDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.privacy_policy)) },
+        text = { Text(stringResource(R.string.privacy_policy_body)) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.ok))
+            }
+        }
+    )
 }
 
 @Composable
@@ -272,4 +551,11 @@ fun AppThemeDialog(
             }
         }
     )
+}
+
+private enum class SupportDialog {
+    NONE,
+    ABOUT,
+    HELP,
+    PRIVACY
 }

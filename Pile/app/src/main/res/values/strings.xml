@@ -9,6 +9,15 @@
     <string name="navigate_to_edit_unsaved_document">Navigate to edit unsaved document</string>
     <string name="see_more">See more</string>
 
+    <string name="sort_by_date">Sort by Date</string>
+    <string name="sort_newest">Newest first</string>
+    <string name="sort_oldest">Oldest first</string>
+
+    <string name="pile_item_count">%1$d items</string>
+    <string name="pile_document_count">%1$d documents</string>
+    <string name="untitled_document">Untitled document</string>
+    <string name="size_unknown">—</string>
+
     <string name="new_">New</string>
     <string name="edit">Edit</string>
     <string name="cancel">Cancel</string>
@@ -144,6 +153,29 @@
     <string name="appearance">Appearance</string>
     <string name="artificial_intelligence">Artificial intelligence</string>
     <string name="resolution">Resolution</string>
+
+    <string name="user_account">User Account</string>
+    <string name="profile_name">Name</string>
+    <string name="profile_email">Email</string>
+    <string name="profile_name_default">Pile User</string>
+    <string name="profile_email_default">you@example.com</string>
+    <string name="edit_profile">Edit profile</string>
+    <string name="save">Save</string>
+
+    <string name="storage_security">Storage &amp; Security</string>
+    <string name="cloud_backup">Cloud Backup</string>
+    <string name="cloud_backup_body">Sync and back up your documents securely.</string>
+    <string name="app_lock">App Lock</string>
+    <string name="app_lock_body">Require authentication to open Pile.</string>
+
+    <string name="about_support">About &amp; Support</string>
+    <string name="about_pile">About Pile</string>
+    <string name="about_pile_body">Pile is a privacy-first document manager. All your documents are stored locally on your device, and Piles help you organize them exactly how you like.</string>
+    <string name="help_support">Help &amp; Support</string>
+    <string name="help_support_body">Need a hand? Visit the project repository to open an issue, or contact us at support@pileapp.es</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="privacy_policy_body">Pile stores all your documents and data locally on your device. We don\'t collect, upload or share your personal files with anyone.</string>
+    <string name="app_version">Version %1$s</string>
 
     <string name="theme">Theme</string>
     <string name="select_theme">Select theme</string>
