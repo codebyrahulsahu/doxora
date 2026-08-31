@@ -33,7 +33,7 @@ class DocumentLockRepositoryImpl(
         storedHash == hashPin(documentId, pin)
     }
 
-    override suspend fun lockDocument(documentId: String, pin: String) = withContext(ioDispatcher) {
+    override suspend fun lockDocument(documentId: String, pin: String): Unit = withContext(ioDispatcher) {
         databaseQueries.upsertDocumentLock(
             documentId = documentId,
             pinHash = hashPin(documentId, pin),
@@ -51,7 +51,7 @@ class DocumentLockRepositoryImpl(
         true
     }
 
-    override suspend fun removeLock(documentId: String) = withContext(ioDispatcher) {
+    override suspend fun removeLock(documentId: String): Unit = withContext(ioDispatcher) {
         databaseQueries.removeDocumentLock(documentId)
     }
 

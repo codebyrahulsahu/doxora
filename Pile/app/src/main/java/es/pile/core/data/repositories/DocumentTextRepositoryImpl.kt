@@ -21,7 +21,7 @@ class DocumentTextRepositoryImpl(
             .mapToOneOrNull(ioDispatcher)
             .map { it?.text }
 
-    override suspend fun saveDocumentText(documentId: String, text: String) = withContext(ioDispatcher) {
+    override suspend fun saveDocumentText(documentId: String, text: String): Unit = withContext(ioDispatcher) {
         databaseQueries.upsertDocumentText(
             documentId = documentId,
             text = text,
@@ -29,7 +29,7 @@ class DocumentTextRepositoryImpl(
         )
     }
 
-    override suspend fun deleteDocumentText(documentId: String) = withContext(ioDispatcher) {
+    override suspend fun deleteDocumentText(documentId: String): Unit = withContext(ioDispatcher) {
         databaseQueries.removeDocumentText(documentId)
     }
 
