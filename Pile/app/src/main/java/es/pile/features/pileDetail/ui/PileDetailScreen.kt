@@ -197,9 +197,9 @@ fun PileDetailContent(
         state.documentCoverItems.sortedWith(
             when (state.sortOrder) {
                 DocumentSortOrder.NEWEST ->
-                    compareByDescending { it.document.creationDateTime }
+                    compareByDescending<DocumentCoverItem> { it.document.creationDateTime }
                 DocumentSortOrder.OLDEST ->
-                    compareBy { it.document.creationDateTime }
+                    compareBy<DocumentCoverItem> { it.document.creationDateTime }
             }
         )
     }

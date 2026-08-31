@@ -83,6 +83,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.pile.R
+import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentSortOrder
 import es.pile.core.ui.composables.AlertDraftDocumentWarning
 import es.pile.core.ui.composables.AlertNewPile
@@ -116,9 +117,9 @@ fun HomeScreen(
         state.documentCoverItems.sortedWith(
             when (state.sortOrder) {
                 DocumentSortOrder.NEWEST ->
-                    compareByDescending { it.document.creationDateTime }
+                    compareByDescending<DocumentCoverItem> { it.document.creationDateTime }
                 DocumentSortOrder.OLDEST ->
-                    compareBy { it.document.creationDateTime }
+                    compareBy<DocumentCoverItem> { it.document.creationDateTime }
             }
         )
     }
