@@ -66,15 +66,4 @@ class DataStoreSettingsRepository(
         }
     }
 
-    override suspend fun updateCloudBackup(enable: Boolean) {
-        withContext(ioDispatcher) {
-            dataStore.updateData { it.copy(isCloudBackupEnabled = enable) }
-        }
-    }
-
-    override suspend fun updateAppLock(enable: Boolean) {
-        withContext(ioDispatcher) {
-            dataStore.updateData { it.copy(isAppLockEnabled = enable) }
-        }
-    }
 }

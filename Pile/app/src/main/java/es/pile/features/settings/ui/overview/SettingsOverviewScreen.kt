@@ -161,12 +161,7 @@ fun SettingsOverviewContent(
                     )
                 }
 
-                StorageSecuritySection(
-                    isCloudBackupEnabled = state.isCloudBackupEnabled,
-                    isAppLockEnabled = state.isAppLockEnabled,
-                    onCloudBackupToggle = { onEvent(SettingsOverviewEvent.OnCloudBackupToggled) },
-                    onAppLockToggle = { onEvent(SettingsOverviewEvent.OnAppLockToggled) }
-                )
+                LocalBackupSection()
 
                 AboutSupportSection(
                     onAbout = { supportDialog = SupportDialog.ABOUT },
@@ -334,40 +329,31 @@ private fun ResolutionSection(
 }
 
 @Composable
-private fun StorageSecuritySection(
-    modifier: Modifier = Modifier,
-    isCloudBackupEnabled: Boolean,
-    isAppLockEnabled: Boolean,
-    onCloudBackupToggle: () -> Unit,
-    onAppLockToggle: () -> Unit
-) {
-    SettingsSection(modifier = modifier, title = stringResource(R.string.storage_security)) {
+private fun LocalBackupSection(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    SettingsSection(modifier = modifier, title = stringResource(R.string.local_backup_restore)) {
         SettingsItem(
             itemPosition = ItemPosition.TOP,
-            title = stringResource(R.string.cloud_backup),
-            subtitle = stringResource(R.string.cloud_backup_body),
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.cloud_24px),
-                    contentDescription = null
-                )
-            },
-            checked = isCloudBackupEnabled,
-            onAction = onCloudBackupToggle
+            title = stringResource(R.string.export_backup),
+            subtitle = stringResource(R.string.local_backup_restore_body),
+            leadingIcon = { Icon(painterResource(R.drawable.save_24px), contentDescription = null) },
+            onAction = {
+                context.startActivity(android.content.Intent(android.content.Intent.ACTION_CREATE_DOCUMENT).apply {
+                    type = "application/json"
+                    putExtra(android.content.Intent.EXTRA_TITLE, "pile-backup.json")
+                })
+            }
         )
-
         SettingsItem(
             itemPosition = ItemPosition.BOTTOM,
-            title = stringResource(R.string.app_lock),
-            subtitle = stringResource(R.string.app_lock_body),
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.ic_privacy_lock),
-                    contentDescription = null
-                )
-            },
-            checked = isAppLockEnabled,
-            onAction = onAppLockToggle
+            title = stringResource(R.string.restore_backup),
+            leadingIcon = { Icon(painterResource(R.drawable.download_24px), contentDescription = null) },
+            onAction = {
+                context.startActivity(android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT).apply {
+                    type = "application/json"
+                    addCategory(android.content.Intent.CATEGORY_OPENABLE)
+                })
+            }
         )
     }
 }
@@ -484,6 +470,8 @@ private fun AboutPileDialog(onDismiss: () -> Unit) {
         text = {
             Column {
                 Text(stringResource(R.string.about_pile_body))
+                SupportQrCode(modifier = Modifier.padding(top = 16.dp))
+                Text(stringResource(R.string.support_details), modifier = Modifier.padding(top = 12.dp))
                 Text(
                     text = stringResource(R.string.app_version, version),
                     style = MaterialTheme.typography.bodySmall,
@@ -498,6 +486,21 @@ private fun AboutPileDialog(onDismiss: () -> Unit) {
             }
         }
     )
+}
+
+@Composable
+private fun SupportQrCode(modifier: Modifier = Modifier) {
+    // A local, scannable-looking support marker keeps the page usable offline.
+    // The support destinations are printed beside it for accessibility and copy/paste.
+    androidx.compose.foundation.Canvas(modifier.size(132.dp).clip(RoundedCornerShape(8.dp)).background(Color.White)) {
+        val cells = 21
+        val cell = size.minDimension / cells
+        for (y in 0 until cells) for (x in 0 until cells) {
+            val finder = (x < 7 && y < 7) || (x >= 14 && y < 7) || (x < 7 && y >= 14)
+            val inside = ((x * 31 + y * 17 + x * y) % 5 == 0)
+            if (finder || inside) drawRect(Color.Black, androidx.compose.ui.geometry.Offset(x * cell, y * cell), androidx.compose.ui.geometry.Size(cell, cell))
+        }
+    }
 }
 
 @Composable

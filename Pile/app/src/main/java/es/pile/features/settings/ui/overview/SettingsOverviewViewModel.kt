@@ -24,8 +24,6 @@ class SettingsOverviewViewModel(
                 imageResolution = userSettings.imageResolution,
                 profileName = userSettings.profileName,
                 profileEmail = userSettings.profileEmail,
-                isCloudBackupEnabled = userSettings.isCloudBackupEnabled,
-                isAppLockEnabled = userSettings.isAppLockEnabled
             )
         }
         .stateIn(
@@ -47,9 +45,6 @@ class SettingsOverviewViewModel(
 
             is SettingsOverviewEvent.OnProfileUpdated -> updateProfile(event.name, event.email)
 
-            SettingsOverviewEvent.OnCloudBackupToggled -> updateCloudBackup()
-
-            SettingsOverviewEvent.OnAppLockToggled -> updateAppLock()
         }
     }
 
@@ -78,15 +73,4 @@ class SettingsOverviewViewModel(
         }
     }
 
-    private fun updateCloudBackup() {
-        viewModelScope.launch {
-            settingsRepository.updateCloudBackup(!state.value.isCloudBackupEnabled)
-        }
-    }
-
-    private fun updateAppLock() {
-        viewModelScope.launch {
-            settingsRepository.updateAppLock(!state.value.isAppLockEnabled)
-        }
-    }
 }
