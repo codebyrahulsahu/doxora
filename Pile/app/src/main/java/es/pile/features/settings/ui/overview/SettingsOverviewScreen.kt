@@ -18,6 +18,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -64,12 +66,14 @@ import org.koin.androidx.compose.koinViewModel
 fun SettingsOverviewScreen(
     viewModel: SettingsOverviewViewModel = koinViewModel(),
     popBackStack: () -> Unit,
-    navigateToSettingsResolution: () -> Unit
+    navigateToSettingsResolution: () -> Unit,
+    navigateToFavorites: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     SettingsOverviewContent(
         state = state,
+        navigateToFavorites = navigateToFavorites,
         onEvent = { event ->
             when (event) {
                 is SettingsOverviewEvent.OnBackClicked -> popBackStack()
@@ -100,6 +104,7 @@ fun SettingsOverviewPreview() {
 fun SettingsOverviewContent(
     state: SettingsOverviewState,
     onEvent: (SettingsOverviewEvent) -> Unit,
+    navigateToFavorites: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -145,6 +150,16 @@ fun SettingsOverviewContent(
                     imageResolution = state.imageResolution,
                     onResolutionChange = { onEvent(SettingsOverviewEvent.OnResolutionClicked) }
                 )
+
+                SettingsSection(title = "Library") {
+                    SettingsItem(
+                        itemPosition = ItemPosition.SINGLE,
+                        title = "Favorites",
+                        subtitle = "Your starred documents",
+                        leadingIcon = { Icon(Icons.Default.Star, contentDescription = null) },
+                        onAction = navigateToFavorites
+                    )
+                }
 
                 StorageSecuritySection(
                     isCloudBackupEnabled = state.isCloudBackupEnabled,

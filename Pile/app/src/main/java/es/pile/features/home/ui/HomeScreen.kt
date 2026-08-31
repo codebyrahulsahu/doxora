@@ -371,7 +371,9 @@ fun HomeScreen(
                             backgroundColor = backgroundDocuments,
                             documents = sortedDocuments,
                             documentSizes = state.documentSizes,
-                            onDocumentClick = navigateToDocumentDetail
+                            onDocumentClick = navigateToDocumentDetail,
+                            favoriteDocumentIds = state.favoriteDocumentIds,
+                            onFavoriteToggle = { viewModel.handleEvent(HomeEvent.OnFavoriteToggled(it)) }
                         )
                     }
 

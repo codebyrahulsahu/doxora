@@ -20,6 +20,7 @@ data class HomeState(
     val showDraftWarning: Boolean = false,
     val isLoadingNewDocument: Boolean = false,
     val isInitialLoading: Boolean = true,
+    val favoriteDocumentIds: Set<String> = emptySet(),
     val errorMessage: UiText? = null
 )
 

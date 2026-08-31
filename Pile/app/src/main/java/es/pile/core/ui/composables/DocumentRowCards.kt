@@ -14,9 +14,12 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,7 +52,9 @@ fun LazyListScope.itemDocumentsVerticalList(
     backgroundColor: Color = Color.Transparent,
     documents: List<DocumentCoverItem>,
     documentSizes: Map<String, Long>,
-    onDocumentClick: (documentId: String) -> Unit = {}
+    onDocumentClick: (documentId: String) -> Unit = {},
+    favoriteDocumentIds: Set<String> = emptySet(),
+    onFavoriteToggle: (documentId: String) -> Unit = {}
 ) {
     documents.forEach { documentItem ->
         item(key = "document_${documentItem.document.id}") {
@@ -57,6 +62,8 @@ fun LazyListScope.itemDocumentsVerticalList(
                 documentModel = documentItem.document,
                 sizeBytes = documentSizes[documentItem.document.id],
                 onClick = onDocumentClick,
+                isFavorite = documentItem.document.id in favoriteDocumentIds,
+                onFavoriteToggle = onFavoriteToggle,
                 modifier = Modifier
                     .background(backgroundColor)
                     .padding(horizontal = 16.dp)
@@ -74,6 +81,8 @@ fun DocumentRowCard(
     documentModel: DocumentModel,
     sizeBytes: Long?,
     onClick: (String) -> Unit,
+    isFavorite: Boolean = false,
+    onFavoriteToggle: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -133,6 +142,13 @@ fun DocumentRowCard(
                 }
             }
 
+            IconButton(onClick = { onFavoriteToggle(documentModel.id) }) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                    contentDescription = if (isFavorite) stringResource(R.string.remove_from_favorites) else stringResource(R.string.add_to_favorites),
+                    tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,

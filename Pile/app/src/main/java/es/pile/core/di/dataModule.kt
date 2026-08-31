@@ -11,6 +11,7 @@ import es.pile.core.data.repositories.DataStoreSettingsRepository
 import es.pile.core.data.repositories.DocumentImageRepositoryImpl
 import es.pile.core.data.repositories.DocumentModelRepositoryImpl
 import es.pile.core.data.repositories.FileRepositoryImpl
+import es.pile.core.data.repositories.FavoritesRepositoryImpl
 import es.pile.core.data.repositories.PileModelRepositoryImpl
 import es.pile.core.data.util.ImageTransformationHelper
 import es.pile.core.data.util.PdfRenderHelper
@@ -21,6 +22,7 @@ import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentImageRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
 import es.pile.core.domain.repositories.FileRepository
+import es.pile.core.domain.repositories.FavoritesRepository
 import es.pile.core.domain.repositories.PileModelRepository
 import es.pile.core.domain.repositories.SettingsRepository
 import org.koin.android.ext.koin.androidContext
@@ -68,6 +70,10 @@ val dataModule = module {
             databaseQueries = get(),
             ioDispatcher = get()
         )
+    }
+
+    single<FavoritesRepository> {
+        FavoritesRepositoryImpl(databaseQueries = get(), ioDispatcher = get())
     }
 
     single<FileRepository> {
