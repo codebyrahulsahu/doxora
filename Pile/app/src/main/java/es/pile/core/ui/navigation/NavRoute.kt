@@ -56,6 +56,10 @@ sealed interface Pane : Parcelable, NavKey {
 
     @Parcelize
     @Serializable
+    data object Favorites : Pane
+
+    @Parcelize
+    @Serializable
     data object SettingsOverview : Pane
 
     @Parcelize

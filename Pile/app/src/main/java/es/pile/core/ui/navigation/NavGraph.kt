@@ -18,6 +18,7 @@ import es.pile.features.addDocument.ui.AddDocumentScreen
 import es.pile.features.documentDetail.ui.DocumentDetailScreen
 import es.pile.features.editDocument.ui.EditDocumentScreen
 import es.pile.features.home.ui.HomeScreen
+import es.pile.features.home.ui.FavoritesScreen
 import es.pile.features.pileDetail.ui.PileDetailScreen
 import es.pile.features.search.ui.SearchScreen
 import es.pile.features.settings.ui.overview.SettingsOverviewScreen
@@ -163,12 +164,20 @@ fun PileNavigation(modifier: Modifier = Modifier, backStack: NavBackStack<NavKey
                 )
             }
 
+            entry<Pane.Favorites> {
+                FavoritesScreen(
+                    popBackStack = { backStack.removeLastOrNull() },
+                    navigateToDocumentDetail = { id -> backStack.add(Pane.DocumentDetail(id)) }
+                )
+            }
+
             entry<Pane.SettingsOverview> {
                 SettingsOverviewScreen(
                     popBackStack = backStack::removeLastOrNull,
                     navigateToSettingsResolution = {
                         backStack.add(Pane.SettingsResolution)
-                    }
+                    },
+                    navigateToFavorites = { backStack.add(Pane.Favorites) }
                 )
             }
 

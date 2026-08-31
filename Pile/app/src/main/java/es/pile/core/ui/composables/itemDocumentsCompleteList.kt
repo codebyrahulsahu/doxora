@@ -78,7 +78,9 @@ fun LazyListScope.itemDocumentsCompleteList(
     documents: List<DocumentCoverItem>,
     bitmapCache: Map<String, Bitmap>,
     onLoadBitmap: suspend (document: DocumentModel) -> Unit,
-    onDocumentClick: (documentId: String) -> Unit = {}
+    onDocumentClick: (documentId: String) -> Unit = {},
+    favoriteDocumentIds: Set<String> = emptySet(),
+    onFavoriteToggle: (documentId: String) -> Unit = {}
 ) {
     val groupedDocuments = documents
         .filter { it.document.documentStatus == DocumentStatusConstants.SAVED }

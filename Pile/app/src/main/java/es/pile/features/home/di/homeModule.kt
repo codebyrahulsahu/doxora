@@ -7,6 +7,7 @@ import es.pile.features.home.domain.useCases.CreateDocumentUseCase
 import es.pile.features.home.domain.useCases.GetHomeDataUseCase
 import es.pile.features.home.domain.useCases.ManageTemporaryDocumentUseCase
 import es.pile.features.home.ui.HomeViewModel
+import es.pile.features.home.ui.FavoritesViewModel
 import org.koin.androidx.workmanager.dsl.workerOf
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.viewModelOf
@@ -23,4 +24,5 @@ val homeModule = module {
     }
 
     viewModelOf(::HomeViewModel)
+    viewModelOf(::FavoritesViewModel)
 }

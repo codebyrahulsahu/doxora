@@ -1,0 +1,18 @@
+import kotlin.Boolean;
+
+CREATE TABLE IF NOT EXISTS FavoriteDocument(
+    documentId TEXT PRIMARY KEY REFERENCES DocumentModel(id) ON DELETE CASCADE,
+    createdAt TEXT NOT NULL
+);
+
+addFavoriteDocument:
+INSERT OR IGNORE INTO FavoriteDocument(documentId, createdAt) VALUES (?, ?);
+
+removeFavoriteDocument:
+DELETE FROM FavoriteDocument WHERE documentId = ?;
+
+selectFavoriteDocumentIds:
+SELECT documentId FROM FavoriteDocument ORDER BY createdAt DESC;
+
+isDocumentFavorite:
+SELECT documentId FROM FavoriteDocument WHERE documentId = ?;

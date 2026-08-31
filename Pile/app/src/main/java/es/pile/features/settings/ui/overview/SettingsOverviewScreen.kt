@@ -18,6 +18,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -64,12 +66,14 @@ import org.koin.androidx.compose.koinViewModel
 fun SettingsOverviewScreen(
     viewModel: SettingsOverviewViewModel = koinViewModel(),
     popBackStack: () -> Unit,
-    navigateToSettingsResolution: () -> Unit
+    navigateToSettingsResolution: () -> Unit,
+    navigateToFavorites: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     SettingsOverviewContent(
         state = state,
+        navigateToFavorites = navigateToFavorites,
         onEvent = { event ->
             when (event) {
                 is SettingsOverviewEvent.OnBackClicked -> popBackStack()
@@ -100,6 +104,7 @@ fun SettingsOverviewPreview() {
 fun SettingsOverviewContent(
     state: SettingsOverviewState,
     onEvent: (SettingsOverviewEvent) -> Unit,
+    navigateToFavorites: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -146,12 +151,17 @@ fun SettingsOverviewContent(
                     onResolutionChange = { onEvent(SettingsOverviewEvent.OnResolutionClicked) }
                 )
 
-                StorageSecuritySection(
-                    isCloudBackupEnabled = state.isCloudBackupEnabled,
-                    isAppLockEnabled = state.isAppLockEnabled,
-                    onCloudBackupToggle = { onEvent(SettingsOverviewEvent.OnCloudBackupToggled) },
-                    onAppLockToggle = { onEvent(SettingsOverviewEvent.OnAppLockToggled) }
-                )
+                SettingsSection(title = "Library") {
+                    SettingsItem(
+                        itemPosition = ItemPosition.SINGLE,
+                        title = "Favorites",
+                        subtitle = "Your starred documents",
+                        leadingIcon = { Icon(Icons.Default.Star, contentDescription = null) },
+                        onAction = navigateToFavorites
+                    )
+                }
+
+                LocalBackupSection()
 
                 AboutSupportSection(
                     onAbout = { supportDialog = SupportDialog.ABOUT },
@@ -319,40 +329,31 @@ private fun ResolutionSection(
 }
 
 @Composable
-private fun StorageSecuritySection(
-    modifier: Modifier = Modifier,
-    isCloudBackupEnabled: Boolean,
-    isAppLockEnabled: Boolean,
-    onCloudBackupToggle: () -> Unit,
-    onAppLockToggle: () -> Unit
-) {
-    SettingsSection(modifier = modifier, title = stringResource(R.string.storage_security)) {
+private fun LocalBackupSection(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    SettingsSection(modifier = modifier, title = stringResource(R.string.local_backup_restore)) {
         SettingsItem(
             itemPosition = ItemPosition.TOP,
-            title = stringResource(R.string.cloud_backup),
-            subtitle = stringResource(R.string.cloud_backup_body),
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.cloud_24px),
-                    contentDescription = null
-                )
-            },
-            checked = isCloudBackupEnabled,
-            onAction = onCloudBackupToggle
+            title = stringResource(R.string.export_backup),
+            subtitle = stringResource(R.string.local_backup_restore_body),
+            leadingIcon = { Icon(painterResource(R.drawable.save_24px), contentDescription = null) },
+            onAction = {
+                context.startActivity(android.content.Intent(android.content.Intent.ACTION_CREATE_DOCUMENT).apply {
+                    type = "application/json"
+                    putExtra(android.content.Intent.EXTRA_TITLE, "pile-backup.json")
+                })
+            }
         )
-
         SettingsItem(
             itemPosition = ItemPosition.BOTTOM,
-            title = stringResource(R.string.app_lock),
-            subtitle = stringResource(R.string.app_lock_body),
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.ic_privacy_lock),
-                    contentDescription = null
-                )
-            },
-            checked = isAppLockEnabled,
-            onAction = onAppLockToggle
+            title = stringResource(R.string.restore_backup),
+            leadingIcon = { Icon(painterResource(R.drawable.download_24px), contentDescription = null) },
+            onAction = {
+                context.startActivity(android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT).apply {
+                    type = "application/json"
+                    addCategory(android.content.Intent.CATEGORY_OPENABLE)
+                })
+            }
         )
     }
 }
@@ -469,6 +470,8 @@ private fun AboutPileDialog(onDismiss: () -> Unit) {
         text = {
             Column {
                 Text(stringResource(R.string.about_pile_body))
+                SupportQrCode(modifier = Modifier.padding(top = 16.dp))
+                Text(stringResource(R.string.support_details), modifier = Modifier.padding(top = 12.dp))
                 Text(
                     text = stringResource(R.string.app_version, version),
                     style = MaterialTheme.typography.bodySmall,
@@ -482,6 +485,15 @@ private fun AboutPileDialog(onDismiss: () -> Unit) {
                 Text(stringResource(R.string.ok))
             }
         }
+    )
+}
+
+@Composable
+private fun SupportQrCode(modifier: Modifier = Modifier) {
+    androidx.compose.foundation.Image(
+        painter = painterResource(R.drawable.support_qr),
+        contentDescription = stringResource(R.string.support_details),
+        modifier = modifier.size(132.dp).clip(RoundedCornerShape(8.dp))
     )
 }
 

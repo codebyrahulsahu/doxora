@@ -79,12 +79,10 @@ interface SettingsRepository {
      *
      * @param enable Whether cloud backup should be enabled.
      */
-    suspend fun updateCloudBackup(enable: Boolean)
 
     /**
      * Updates the app lock preference.
      *
      * @param enable Whether app lock should be enabled.
      */
-    suspend fun updateAppLock(enable: Boolean)
 }

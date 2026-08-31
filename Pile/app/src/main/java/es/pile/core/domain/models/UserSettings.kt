@@ -11,6 +11,4 @@ data class UserSettings(
     val imageResolution: ImageResolution = ImageResolution.ORIGINAL,
     val profileName: String? = null,
     val profileEmail: String? = null,
-    val isCloudBackupEnabled: Boolean = false,
-    val isAppLockEnabled: Boolean = false
 )

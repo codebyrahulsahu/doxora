@@ -163,14 +163,20 @@
     <string name="save">Save</string>
 
     <string name="storage_security">Storage &amp; Security</string>
-    <string name="cloud_backup">Cloud Backup</string>
-    <string name="cloud_backup_body">Sync and back up your documents securely.</string>
-    <string name="app_lock">App Lock</string>
-    <string name="app_lock_body">Require authentication to open Pile.</string>
+    <string name="local_backup_restore">Local Backup &amp; Restore</string>
+    <string name="local_backup_restore_body">Export your data to a file on this device, or restore it later.</string>
+    <string name="export_backup">Export backup</string>
+    <string name="restore_backup">Restore backup</string>
+    <string name="add_to_favorites">Add to favorites</string>
+    <string name="remove_from_favorites">Remove from favorites</string>
 
     <string name="about_support">About &amp; Support</string>
     <string name="about_pile">About Pile</string>
     <string name="about_pile_body">Pile is a privacy-first document manager. All your documents are stored locally on your device, and Piles help you organize them exactly how you like.</string>
+    <string name="support_details">Support QR code
+Instagram: @rahulsahux004
+GitHub: codebyrahulsahu
+Email: kanhaiyalaljojawar@gmail.com</string>
     <string name="help_support">Help &amp; Support</string>
     <string name="help_support_body">Need a hand? Visit the project repository to open an issue, or contact us at support@pileapp.es</string>
     <string name="privacy_policy">Privacy Policy</string>

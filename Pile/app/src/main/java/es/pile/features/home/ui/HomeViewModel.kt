@@ -8,6 +8,7 @@ import es.pile.R
 import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.FileRepository
+import es.pile.core.domain.repositories.FavoritesRepository
 import es.pile.core.domain.useCases.CreatePileUseCase
 import es.pile.core.domain.useCases.GetDocumentSizesUseCase
 import es.pile.core.domain.useCases.RequestBitmapLoadUseCase
@@ -35,7 +36,8 @@ class HomeViewModel(
     private val getDocumentSizesUseCase: GetDocumentSizesUseCase,
     private val cleanupScheduler: CleanupScheduler,
     private val bitmapCacheRepository: BitmapCacheRepository,
-    private val fileRepository: FileRepository
+    private val fileRepository: FileRepository,
+    private val favoritesRepository: FavoritesRepository
 ) : ViewModel() {
     private var _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
@@ -50,6 +52,11 @@ class HomeViewModel(
     private var backupUnsavedDocument: TemporaryDocumentBackup? = null
 
     init {
+        viewModelScope.launch {
+            favoritesRepository.favoriteDocumentIds.collect { ids ->
+                _state.update { it.copy(favoriteDocumentIds = ids.toSet()) }
+            }
+        }
         viewModelScope.launch {
             getHomeDataUseCase().collect { homeData ->
                 val documentCoverItems = homeData.documents.map { documentModel ->
@@ -83,6 +90,12 @@ class HomeViewModel(
 
     fun handleEvent(event: HomeEvent) {
         when (event) {
+            is HomeEvent.OnFavoriteToggled -> viewModelScope.launch {
+                favoritesRepository.setFavorite(
+                    event.documentId,
+                    event.documentId !in state.value.favoriteDocumentIds
+                )
+            }
             is HomeEvent.OnImageDisplayed -> requestBitmapLoad(event.document)
 
             is HomeEvent.OnRemoveDraftDocument -> removeDraftDocument()
