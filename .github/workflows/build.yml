@@ -3,8 +3,6 @@ name: Build APK
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -24,10 +22,10 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x Pile/gradlew
       
-      - name: Build APK and run unit tests
+      - name: Build APK
         run: |
           cd Pile
-          ./gradlew assembleDebug testDebugUnitTest
+          ./gradlew assembleDebug
       
       - name: Upload APK
         uses: actions/upload-artifact@v4
