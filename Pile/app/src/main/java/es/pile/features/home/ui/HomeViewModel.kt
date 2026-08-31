@@ -9,6 +9,7 @@ import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.useCases.CreatePileUseCase
+import es.pile.core.domain.useCases.GetDocumentSizesUseCase
 import es.pile.core.domain.useCases.RequestBitmapLoadUseCase
 import es.pile.core.ui.util.UiText
 import es.pile.features.home.domain.models.TemporaryDocumentBackup
@@ -31,6 +32,7 @@ class HomeViewModel(
     private val getHomeDataUseCase: GetHomeDataUseCase,
     private val createPileUseCase: CreatePileUseCase,
     private val requestBitmapLoadUseCase: RequestBitmapLoadUseCase,
+    private val getDocumentSizesUseCase: GetDocumentSizesUseCase,
     private val cleanupScheduler: CleanupScheduler,
     private val bitmapCacheRepository: BitmapCacheRepository,
     private val fileRepository: FileRepository
@@ -63,9 +65,13 @@ class HomeViewModel(
                         documentCoverItems = documentCoverItems,
                         temporaryDocument = homeData.temporaryDocument,
                         coloredPileIds = homeData.coloredPileIds,
+                        pileDocumentCounts = homeData.pileDocumentCounts,
                         isInitialLoading = false
                     )
                 }
+
+                val documentSizes = getDocumentSizesUseCase(homeData.documents)
+                _state.update { it.copy(documentSizes = documentSizes) }
             }
         }
     }
@@ -123,6 +129,10 @@ class HomeViewModel(
             HomeEvent.OnDismissDraftWarning -> {
                 _state.update { it.copy(showDraftWarning = false) }
                 pendingImportAction = null
+            }
+
+            is HomeEvent.OnSortOrderChanged -> {
+                _state.update { it.copy(sortOrder = event.sortOrder) }
             }
 
             HomeEvent.OnErrorDismissed -> _state.update { it.copy(errorMessage = null) }

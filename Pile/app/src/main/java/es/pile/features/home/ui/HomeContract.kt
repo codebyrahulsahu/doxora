@@ -4,6 +4,7 @@ import android.net.Uri
 import es.pile.DocumentModel
 import es.pile.PileModel
 import es.pile.core.domain.models.DocumentCoverItem
+import es.pile.core.domain.models.DocumentSortOrder
 import es.pile.core.ui.util.UiText
 
 
@@ -12,6 +13,9 @@ data class HomeState(
     val documentCoverItems: List<DocumentCoverItem> = emptyList(),
     val temporaryDocument: DocumentModel? = null,
     val coloredPileIds: List<String> = emptyList(),
+    val pileDocumentCounts: Map<String, Int> = emptyMap(),
+    val documentSizes: Map<String, Long> = emptyMap(),
+    val sortOrder: DocumentSortOrder = DocumentSortOrder.NEWEST,
     val cameraUri: Uri? = null,
     val showDraftWarning: Boolean = false,
     val isLoadingNewDocument: Boolean = false,
@@ -35,6 +39,8 @@ sealed interface HomeEvent {
 
     data object OnConfirmImport : HomeEvent
     data object OnDismissDraftWarning : HomeEvent
+
+    data class OnSortOrderChanged(val sortOrder: DocumentSortOrder) : HomeEvent
 
     data object OnErrorDismissed : HomeEvent
 }

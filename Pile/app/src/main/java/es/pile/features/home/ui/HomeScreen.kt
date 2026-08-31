@@ -12,7 +12,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -84,13 +83,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.pile.R
+import es.pile.core.domain.models.DocumentCoverItem
+import es.pile.core.domain.models.DocumentSortOrder
 import es.pile.core.ui.composables.AlertDraftDocumentWarning
 import es.pile.core.ui.composables.AlertNewPile
 import es.pile.core.ui.composables.LoadingAlert
 import es.pile.core.ui.composables.LoadingWrapper
+import es.pile.core.ui.composables.DocumentSortMenu
+import es.pile.core.ui.composables.PileCardsRow
 import es.pile.core.ui.composables.SwipeBox
-import es.pile.core.ui.composables.itemDocumentsCompleteList
-import es.pile.core.ui.composables.itemPileGrid
+import es.pile.core.ui.composables.itemDocumentsVerticalList
 import es.pile.core.ui.controllers.ImportActions
 import es.pile.core.ui.controllers.rememberDocumentImportController
 import es.pile.features.home.ui.compostables.HomeScreenSectionTitle
@@ -110,7 +112,17 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val bitmapCache by viewModel.bitmapCache.collectAsStateWithLifecycle()
+
+    val sortedDocuments = remember(state.documentCoverItems, state.sortOrder) {
+        state.documentCoverItems.sortedWith(
+            when (state.sortOrder) {
+                DocumentSortOrder.NEWEST ->
+                    compareByDescending<DocumentCoverItem> { it.document.creationDateTime }
+                DocumentSortOrder.OLDEST ->
+                    compareBy<DocumentCoverItem> { it.document.creationDateTime }
+            }
+        )
+    }
 
     var isNavigating by remember { mutableStateOf(false) }
 
@@ -212,7 +224,7 @@ fun HomeScreen(
 
 
         LoadingWrapper(state.isInitialLoading) {
-            BoxWithConstraints(
+            Box(
                 Modifier
                     .padding(
                         top = innerPadding.calculateTopPadding(),
@@ -230,8 +242,6 @@ fun HomeScreen(
                         false
                     }
             ) {
-                val availableWidth = maxWidth
-
                 LazyColumn(
                     Modifier
                         .padding(bottom = innerPadding.calculateBottomPadding())
@@ -299,13 +309,14 @@ fun HomeScreen(
                     }
                     item { Spacer(Modifier.height(8.dp)) }
 
-                    itemPileGrid(
-                        availableWidth = availableWidth,
-                        piles = state.pileModels,
-                        onPileClick = navigateToPileDetail,
-                        onNewPileClick = { isNewPileAlertExpanded = true },
-                        coloredPileIds = state.coloredPileIds
-                    )
+                    item {
+                        PileCardsRow(
+                            piles = state.pileModels,
+                            pileDocumentCounts = state.pileDocumentCounts,
+                            onPileClick = navigateToPileDetail,
+                            onNewPileClick = { isNewPileAlertExpanded = true }
+                        )
+                    }
 
                     item { Spacer(Modifier.height(30.dp)) }
 
@@ -321,12 +332,28 @@ fun HomeScreen(
                                 .background(backgroundDocuments)
                                 .padding(top = 16.dp)
                         ) {
-                            HomeScreenSectionTitle(
-                                title = stringResource(R.string.all_documents),
+                            Row(
                                 modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                            )
-                            Spacer(Modifier.height(8.dp))
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.all_documents),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                DocumentSortMenu(
+                                    sortOrder = state.sortOrder,
+                                    onSortOrderChange = {
+                                        viewModel.handleEvent(
+                                            HomeEvent.OnSortOrderChanged(it)
+                                        )
+                                    }
+                                )
+                            }
+                            Spacer(Modifier.height(12.dp))
                         }
                     }
                     val showEmptyDocuments = state.documentCoverItems.isEmpty()
@@ -340,13 +367,11 @@ fun HomeScreen(
                             )
                         }
                     } else {
-                        itemDocumentsCompleteList(
-                            availableWidth = availableWidth,
+                        itemDocumentsVerticalList(
                             backgroundColor = backgroundDocuments,
-                            documents = state.documentCoverItems,
-                            onDocumentClick = navigateToDocumentDetail,
-                            bitmapCache = bitmapCache,
-                            onLoadBitmap = { viewModel.handleEvent(HomeEvent.OnImageDisplayed(it)) }
+                            documents = sortedDocuments,
+                            documentSizes = state.documentSizes,
+                            onDocumentClick = navigateToDocumentDetail
                         )
                     }
 

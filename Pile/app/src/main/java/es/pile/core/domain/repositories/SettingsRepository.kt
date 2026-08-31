@@ -59,4 +59,32 @@ interface SettingsRepository {
      * @param resolution The new [ImageResolution] to be applied.
      */
     suspend fun updateImageResolution(resolution: ImageResolution)
+
+    /**
+     * Updates the user profile display name.
+     *
+     * @param name The new profile name.
+     */
+    suspend fun updateProfileName(name: String)
+
+    /**
+     * Updates the user profile email.
+     *
+     * @param email The new profile email.
+     */
+    suspend fun updateProfileEmail(email: String)
+
+    /**
+     * Updates the cloud backup preference.
+     *
+     * @param enable Whether cloud backup should be enabled.
+     */
+    suspend fun updateCloudBackup(enable: Boolean)
+
+    /**
+     * Updates the app lock preference.
+     *
+     * @param enable Whether app lock should be enabled.
+     */
+    suspend fun updateAppLock(enable: Boolean)
 }

@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -47,11 +48,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInteropFilter
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,13 +60,15 @@ import es.pile.DocumentModel
 import es.pile.PileModel
 import es.pile.R
 import es.pile.core.domain.models.DocumentCoverItem
+import es.pile.core.domain.models.DocumentSortOrder
 import es.pile.core.ui.composables.AlertDraftDocumentWarning
 import es.pile.core.ui.composables.AlertEditPile
+import es.pile.core.ui.composables.DocumentSortMenu
 import es.pile.core.ui.composables.LoadingAlert
 import es.pile.core.ui.composables.LoadingWrapper
-import es.pile.core.ui.composables.Pile
-import es.pile.core.ui.composables.itemDocumentsCompleteList
+import es.pile.core.ui.composables.itemDocumentsVerticalList
 import es.pile.core.ui.controllers.rememberDocumentImportController
+import es.pile.core.ui.theme.ExtendedTheme
 import es.pile.core.ui.theme.PileTheme
 import es.pile.features.home.ui.FabMenuWithController
 import kotlinx.coroutines.flow.collectLatest
@@ -191,6 +193,17 @@ fun PileDetailContent(
         }
     }
 
+    val sortedDocuments = remember(state.documentCoverItems, state.sortOrder) {
+        state.documentCoverItems.sortedWith(
+            when (state.sortOrder) {
+                DocumentSortOrder.NEWEST ->
+                    compareByDescending<DocumentCoverItem> { it.document.creationDateTime }
+                DocumentSortOrder.OLDEST ->
+                    compareBy<DocumentCoverItem> { it.document.creationDateTime }
+            }
+        )
+    }
+
     var isUpdatePileExpanded by rememberSaveable { mutableStateOf(false) }
     var isDeletePileExpanded by rememberSaveable { mutableStateOf(false) }
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
@@ -210,6 +223,7 @@ fun PileDetailContent(
             state.pile?.let { pileModel ->
                 TopAppBar(
                     pileModel = pileModel,
+                    documentCount = state.documentCoverItems.size,
                     popBackStack = popBackStack,
                     onSearchClick = navigateToSearchScreen,
                     onEditClick = { isUpdatePileExpanded = true },
@@ -239,9 +253,6 @@ fun PileDetailContent(
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-            var availableWidth by remember { mutableStateOf(0.dp) }
-            val density = LocalDensity.current
-
             LoadingWrapper(
                 isLoading = state.isLoading,
                 modifier = Modifier.pointerInteropFilter {
@@ -284,22 +295,35 @@ fun PileDetailContent(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.surface)
-                            .onGloballyPositioned { coordinates ->
-                                val widthPx = coordinates.size.width
-                                availableWidth = with(density) { widthPx.toDp() }.value.dp
-                            }
                     ) {
-                        itemDocumentsCompleteList(
-                            availableWidth = availableWidth,
-                            documents = state.documentCoverItems,
-                            onDocumentClick = { documentId ->
-                                navigateToDocumentDetail(documentId)
-                            },
-                            bitmapCache = bitmapCache,
-                            onLoadBitmap = { document ->
-                                onEvent(PileDetailEvent.OnImageDisplayed(document))
-                            },
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.all_documents),
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+
+                                DocumentSortMenu(
+                                    sortOrder = state.sortOrder,
+                                    onSortOrderChange = {
+                                        onEvent(PileDetailEvent.OnSortOrderChanged(it))
+                                    }
+                                )
+                            }
+                        }
+
+                        itemDocumentsVerticalList(
+                            documents = sortedDocuments,
+                            documentSizes = state.documentSizes,
+                            onDocumentClick = navigateToDocumentDetail
                         )
+
                         item {
                             Spacer(Modifier.height(100.dp))
                         }
@@ -366,56 +390,77 @@ fun PileDetailContent(
 private fun TopAppBar(
     modifier: Modifier = Modifier,
     pileModel: PileModel,
+    documentCount: Int,
     popBackStack: () -> Unit,
     onSearchClick: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
+    val colorIndex = pileModel.colorNumber?.toInt()
+    val colorFamily = ExtendedTheme.colors.customColorList.getOrNull(colorIndex ?: -1)
+
+    val containerColor = colorFamily?.colorContainer
+        ?: MaterialTheme.colorScheme.primaryContainer
+    val contentColor = colorFamily?.onColorContainer
+        ?: MaterialTheme.colorScheme.onPrimaryContainer
+
     Column(
         modifier = modifier
+            .fillMaxWidth()
+            .background(containerColor)
             .statusBarsPadding()
             .displayCutoutPadding()
-            .padding(horizontal = 4.dp)
-            .padding(bottom = 12.dp),
+            .padding(bottom = 14.dp)
     ) {
-        Row(Modifier.padding(vertical = 8.dp)) {
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             IconButton(onClick = popBackStack) {
                 Icon(
                     painter = painterResource(R.drawable.arrow_back_24px),
-                    contentDescription = stringResource(R.string.return_)
+                    contentDescription = stringResource(R.string.return_),
+                    tint = contentColor
                 )
             }
 
-            Spacer(Modifier.weight(1f))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = pileModel.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = contentColor,
+                    maxLines = 1
+                )
+                Text(
+                    text = stringResource(R.string.pile_document_count, documentCount),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = contentColor.copy(alpha = 0.8f)
+                )
+            }
 
             IconButton(onClick = onSearchClick) {
                 Icon(
                     imageVector = Icons.Filled.Search,
-                    contentDescription = stringResource(R.string.search)
+                    contentDescription = stringResource(R.string.search),
+                    tint = contentColor
                 )
             }
             IconButton(onClick = onEditClick) {
                 Icon(
                     painter = painterResource(R.drawable.edit_24px),
-                    contentDescription = stringResource(R.string.edit_pile)
+                    contentDescription = stringResource(R.string.edit_pile),
+                    tint = contentColor
                 )
             }
             IconButton(onClick = onDeleteClick) {
                 Icon(
                     painter = painterResource(R.drawable.delete_24px),
-                    contentDescription = stringResource(R.string.delete_pile)
+                    contentDescription = stringResource(R.string.delete_pile),
+                    tint = contentColor
                 )
             }
         }
-
-        Pile(
-            pileModel = pileModel,
-            isColored = true,
-            enabled = false,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-        )
     }
 }
 

@@ -8,10 +8,12 @@ import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.repositories.PileModelRepository
+import es.pile.core.domain.useCases.GetDocumentSizesUseCase
 import es.pile.core.domain.useCases.RequestBitmapLoadUseCase
 import es.pile.features.home.domain.useCases.CreateDocumentUseCase
 import es.pile.features.pileDetail.domain.usecases.DeletePileUseCase
 import es.pile.features.pileDetail.domain.usecases.UpdatePileUseCase
+import io.mockk.any
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -38,6 +40,8 @@ class PileDetailViewModelTest {
     private val pileModelRepository: PileModelRepository = mockk()
     private val documentModelRepository: DocumentModelRepository = mockk()
     private val bitmapCacheRepository: BitmapCacheRepository = mockk(relaxed = true)
+    private val getDocumentSizesUseCase: GetDocumentSizesUseCase =
+        mockk(relaxed = true)
     private val fileRepository: FileRepository = mockk()
 
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -48,6 +52,7 @@ class PileDetailViewModelTest {
         
         every { pileModelRepository.getPileModelById(pileId) } returns flowOf(PileModel(pileId, "Pile", "icon", 0))
         every { documentModelRepository.documentModels } returns flowOf(emptyList())
+        coEvery { getDocumentSizesUseCase(any()) } returns emptyMap()
     }
 
     @After
@@ -70,6 +75,7 @@ class PileDetailViewModelTest {
             createDocumentUseCase,
             updatePileUseCase,
             deletePileUseCase,
+            getDocumentSizesUseCase,
             pileModelRepository,
             documentModelRepository,
             bitmapCacheRepository,
@@ -98,6 +104,7 @@ class PileDetailViewModelTest {
             createDocumentUseCase,
             updatePileUseCase,
             deletePileUseCase,
+            getDocumentSizesUseCase,
             pileModelRepository,
             documentModelRepository,
             bitmapCacheRepository,
