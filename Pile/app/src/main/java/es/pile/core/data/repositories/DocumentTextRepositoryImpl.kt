@@ -38,7 +38,7 @@ class DocumentTextRepositoryImpl(
             .associate { it.documentId to it.text }
     }
 
-    override suspend fun restoreDocumentTexts(texts: Map<String, String>) = withContext(ioDispatcher) {
+    override suspend fun restoreDocumentTexts(texts: Map<String, String>): Unit = withContext(ioDispatcher) {
         texts.forEach { (documentId, text) ->
             databaseQueries.upsertDocumentText(
                 documentId = documentId,

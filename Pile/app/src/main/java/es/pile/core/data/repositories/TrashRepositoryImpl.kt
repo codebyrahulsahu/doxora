@@ -25,7 +25,7 @@ class TrashRepositoryImpl(
         databaseQueries.selectTrashEntry(documentId).executeAsOneOrNull()
     }
 
-    override suspend fun addToTrash(entry: TrashEntry) = withContext(ioDispatcher) {
+    override suspend fun addToTrash(entry: TrashEntry): Unit = withContext(ioDispatcher) {
         databaseQueries.insertTrashEntry(
             documentId = entry.documentId,
             trashedAt = entry.trashedAt,
@@ -33,7 +33,7 @@ class TrashRepositoryImpl(
         )
     }
 
-    override suspend fun removeFromTrash(documentId: String) = withContext(ioDispatcher) {
+    override suspend fun removeFromTrash(documentId: String): Unit = withContext(ioDispatcher) {
         databaseQueries.removeTrashEntry(documentId)
     }
 }
