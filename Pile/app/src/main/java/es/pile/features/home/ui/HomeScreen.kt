@@ -36,6 +36,8 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -43,6 +45,7 @@ import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -109,9 +112,11 @@ fun HomeScreen(
     navigateToEditDocument: (documentId: String) -> Unit,
     navigateToAddDocument: (documentId: String) -> Unit,
     navigateToSettings: () -> Unit,
+    navigateToFavorites: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val bitmapCache by viewModel.bitmapCache.collectAsStateWithLifecycle()
 
     val sortedDocuments = remember(state.documentCoverItems, state.sortOrder) {
         state.documentCoverItems.sortedWith(
@@ -344,14 +349,32 @@ fun HomeScreen(
                                     modifier = Modifier.weight(1f)
                                 )
 
-                                DocumentSortMenu(
-                                    sortOrder = state.sortOrder,
-                                    onSortOrderChange = {
-                                        viewModel.handleEvent(
-                                            HomeEvent.OnSortOrderChanged(it)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(onClick = navigateToFavorites) {
+                                        Icon(
+                                            imageVector = if (state.favoriteDocumentIds.isEmpty()) {
+                                                Icons.Outlined.StarBorder
+                                            } else {
+                                                Icons.Filled.Star
+                                            },
+                                            contentDescription = stringResource(R.string.favorites),
+                                            tint = if (state.favoriteDocumentIds.isEmpty()) {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            } else {
+                                                MaterialTheme.colorScheme.primary
+                                            }
                                         )
                                     }
-                                )
+
+                                    DocumentSortMenu(
+                                        sortOrder = state.sortOrder,
+                                        onSortOrderChange = {
+                                            viewModel.handleEvent(
+                                                HomeEvent.OnSortOrderChanged(it)
+                                            )
+                                        }
+                                    )
+                                }
                             }
                             Spacer(Modifier.height(12.dp))
                         }
@@ -371,6 +394,9 @@ fun HomeScreen(
                             backgroundColor = backgroundDocuments,
                             documents = sortedDocuments,
                             documentSizes = state.documentSizes,
+                            bitmapCache = bitmapCache,
+                            onLoadBitmap = { viewModel.handleEvent(HomeEvent.OnImageDisplayed(it)) },
+                            lockedDocumentIds = state.lockedDocumentIds,
                             onDocumentClick = navigateToDocumentDetail,
                             favoriteDocumentIds = state.favoriteDocumentIds,
                             onFavoriteToggle = { viewModel.handleEvent(HomeEvent.OnFavoriteToggled(it)) }

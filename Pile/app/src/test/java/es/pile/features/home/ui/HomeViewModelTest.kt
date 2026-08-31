@@ -3,10 +3,12 @@ package es.pile.features.home.ui
 import es.pile.DocumentModel
 import es.pile.PileModel
 import es.pile.core.domain.repositories.BitmapCacheRepository
+import es.pile.core.domain.repositories.DocumentLockRepository
+import es.pile.core.domain.repositories.FavoritesRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.useCases.CreatePileUseCase
 import es.pile.core.domain.useCases.GetDocumentSizesUseCase
-import es.pile.core.domain.useCases.RequestBitmapLoadUseCase
+import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
 import es.pile.features.home.domain.schedulers.CleanupScheduler
 import es.pile.features.home.domain.useCases.CreateDocumentUseCase
 import es.pile.features.home.domain.useCases.GetHomeDataUseCase
@@ -35,12 +37,18 @@ class HomeViewModelTest {
     private val manageTemporaryDocumentUseCase: ManageTemporaryDocumentUseCase = mockk()
     private val getHomeDataUseCase: GetHomeDataUseCase = mockk()
     private val createPileUseCase: CreatePileUseCase = mockk()
-    private val requestBitmapLoadUseCase: RequestBitmapLoadUseCase = mockk()
+    private val requestCoverThumbnailUseCase: RequestCoverThumbnailUseCase = mockk(relaxed = true)
     private val getDocumentSizesUseCase: GetDocumentSizesUseCase =
         mockk(relaxed = true)
     private val cleanupScheduler: CleanupScheduler = mockk()
     private val bitmapCacheRepository: BitmapCacheRepository = mockk(relaxed = true)
     private val fileRepository: FileRepository = mockk()
+    private val favoritesRepository: FavoritesRepository = mockk {
+        every { favoriteDocumentIds } returns flowOf(emptyList())
+    }
+    private val documentLockRepository: DocumentLockRepository = mockk {
+        every { lockedDocumentIds } returns flowOf(emptySet())
+    }
 
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -74,11 +82,13 @@ class HomeViewModelTest {
             manageTemporaryDocumentUseCase,
             getHomeDataUseCase,
             createPileUseCase,
-            requestBitmapLoadUseCase,
+            requestCoverThumbnailUseCase,
             getDocumentSizesUseCase,
             cleanupScheduler,
             bitmapCacheRepository,
-            fileRepository
+            fileRepository,
+            favoritesRepository,
+            documentLockRepository
         )
 
         // Then

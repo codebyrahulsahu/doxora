@@ -5,11 +5,13 @@ import app.cash.turbine.test
 import es.pile.DocumentModel
 import es.pile.PileModel
 import es.pile.core.domain.repositories.BitmapCacheRepository
+import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
+import es.pile.core.domain.repositories.FavoritesRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.repositories.PileModelRepository
 import es.pile.core.domain.useCases.GetDocumentSizesUseCase
-import es.pile.core.domain.useCases.RequestBitmapLoadUseCase
+import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
 import es.pile.features.home.domain.useCases.CreateDocumentUseCase
 import es.pile.features.pileDetail.domain.usecases.DeletePileUseCase
 import es.pile.features.pileDetail.domain.usecases.UpdatePileUseCase
@@ -33,7 +35,7 @@ import kotlin.test.assertEquals
 class PileDetailViewModelTest {
 
     private val pileId = "test-pile-id"
-    private val requestBitmapLoadUseCase: RequestBitmapLoadUseCase = mockk()
+    private val requestCoverThumbnailUseCase: RequestCoverThumbnailUseCase = mockk(relaxed = true)
     private val createDocumentUseCase: CreateDocumentUseCase = mockk()
     private val updatePileUseCase: UpdatePileUseCase = mockk()
     private val deletePileUseCase: DeletePileUseCase = mockk()
@@ -43,6 +45,12 @@ class PileDetailViewModelTest {
     private val getDocumentSizesUseCase: GetDocumentSizesUseCase =
         mockk(relaxed = true)
     private val fileRepository: FileRepository = mockk()
+    private val favoritesRepository: FavoritesRepository = mockk {
+        every { favoriteDocumentIds } returns flowOf(emptyList())
+    }
+    private val documentLockRepository: DocumentLockRepository = mockk {
+        every { lockedDocumentIds } returns flowOf(emptySet())
+    }
 
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -71,7 +79,7 @@ class PileDetailViewModelTest {
 
         val viewModel = PileDetailViewModel(
             pileId,
-            requestBitmapLoadUseCase,
+            requestCoverThumbnailUseCase,
             createDocumentUseCase,
             updatePileUseCase,
             deletePileUseCase,
@@ -79,7 +87,9 @@ class PileDetailViewModelTest {
             pileModelRepository,
             documentModelRepository,
             bitmapCacheRepository,
-            fileRepository
+            fileRepository,
+            favoritesRepository,
+            documentLockRepository
         )
 
         // When & Then
@@ -100,7 +110,7 @@ class PileDetailViewModelTest {
 
         val viewModel = PileDetailViewModel(
             pileId,
-            requestBitmapLoadUseCase,
+            requestCoverThumbnailUseCase,
             createDocumentUseCase,
             updatePileUseCase,
             deletePileUseCase,
@@ -108,7 +118,9 @@ class PileDetailViewModelTest {
             pileModelRepository,
             documentModelRepository,
             bitmapCacheRepository,
-            fileRepository
+            fileRepository,
+            favoritesRepository,
+            documentLockRepository
         )
 
         // When & Then

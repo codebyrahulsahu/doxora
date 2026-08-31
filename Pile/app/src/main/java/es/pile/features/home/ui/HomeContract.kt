@@ -21,11 +21,14 @@ data class HomeState(
     val isLoadingNewDocument: Boolean = false,
     val isInitialLoading: Boolean = true,
     val favoriteDocumentIds: Set<String> = emptySet(),
+    val lockedDocumentIds: Set<String> = emptySet(),
     val errorMessage: UiText? = null
 )
 
 sealed interface HomeEvent {
     data class OnImageDisplayed(val document: DocumentModel) : HomeEvent
+
+    data class OnFavoriteToggled(val documentId: String) : HomeEvent
 
     data object OnRemoveDraftDocument : HomeEvent
     data object OnRestoreDraftDocument : HomeEvent

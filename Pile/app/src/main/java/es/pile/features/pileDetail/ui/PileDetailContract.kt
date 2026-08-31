@@ -18,11 +18,15 @@ data class PileDetailState(
     val isLoading: Boolean = true,
     val showDraftWarning: Boolean = false,
     val isLoadingNewDocument: Boolean = false,
+    val favoriteDocumentIds: Set<String> = emptySet(),
+    val lockedDocumentIds: Set<String> = emptySet(),
     val errorMessage: UiText? = null
 )
 
 sealed interface PileDetailEvent {
     data class OnImageDisplayed(val document: DocumentModel) : PileDetailEvent
+
+    data class OnFavoriteToggled(val documentId: String) : PileDetailEvent
     data class OnPileChange(val name: String, val iconId: String, val color: Long) :
         PileDetailEvent
 

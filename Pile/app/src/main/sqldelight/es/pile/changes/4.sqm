@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS DocumentText(
+    documentId      TEXT    PRIMARY KEY,
+    text            TEXT    NOT NULL,
+    updatedAt       TEXT    NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS DocumentLock(
+    documentId      TEXT    PRIMARY KEY,
+    pinHash         TEXT    NOT NULL,
+    createdAt       TEXT    NOT NULL
+);

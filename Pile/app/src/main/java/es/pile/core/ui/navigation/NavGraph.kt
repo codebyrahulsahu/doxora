@@ -66,6 +66,9 @@ fun PileNavigation(modifier: Modifier = Modifier, backStack: NavBackStack<NavKey
                     },
                     navigateToSettings = {
                         backStack.add(Pane.SettingsOverview)
+                    },
+                    navigateToFavorites = {
+                        backStack.add(Pane.Favorites)
                     }
                 )
             }

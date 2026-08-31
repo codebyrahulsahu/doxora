@@ -73,16 +73,4 @@ interface SettingsRepository {
      * @param email The new profile email.
      */
     suspend fun updateProfileEmail(email: String)
-
-    /**
-     * Updates the cloud backup preference.
-     *
-     * @param enable Whether cloud backup should be enabled.
-     */
-
-    /**
-     * Updates the app lock preference.
-     *
-     * @param enable Whether app lock should be enabled.
-     */
 }

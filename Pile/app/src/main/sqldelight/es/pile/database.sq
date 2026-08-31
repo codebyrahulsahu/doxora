@@ -243,3 +243,85 @@ updateRotation:
 UPDATE DocumentImage
 SET rotation = ?
 WHERE id = ?;
+
+-- FavoriteDocument
+
+CREATE TABLE IF NOT EXISTS FavoriteDocument(
+    documentId TEXT PRIMARY KEY,
+    createdAt TEXT NOT NULL
+);
+
+addFavoriteDocument:
+INSERT OR IGNORE INTO FavoriteDocument(documentId, createdAt) VALUES (?, ?);
+
+removeFavoriteDocument:
+DELETE FROM FavoriteDocument WHERE documentId = ?;
+
+selectFavoriteDocumentIds:
+SELECT documentId FROM FavoriteDocument ORDER BY createdAt DESC;
+
+selectAllFavoriteDocuments:
+SELECT * FROM FavoriteDocument;
+
+-- DocumentText (OCR / text recognition results)
+
+CREATE TABLE IF NOT EXISTS DocumentText(
+    documentId      TEXT    PRIMARY KEY,
+    text            TEXT    NOT NULL,
+    updatedAt       TEXT    NOT NULL
+);
+
+upsertDocumentText:
+INSERT OR REPLACE INTO DocumentText(documentId, text, updatedAt) VALUES (?, ?, ?);
+
+selectDocumentText:
+SELECT * FROM DocumentText WHERE documentId = ?;
+
+selectAllDocumentTexts:
+SELECT * FROM DocumentText;
+
+removeDocumentText:
+DELETE FROM DocumentText WHERE documentId = ?;
+
+-- DocumentLock (per document PIN protection)
+
+CREATE TABLE IF NOT EXISTS DocumentLock(
+    documentId      TEXT    PRIMARY KEY,
+    pinHash         TEXT    NOT NULL,
+    createdAt       TEXT    NOT NULL
+);
+
+upsertDocumentLock:
+INSERT OR REPLACE INTO DocumentLock(documentId, pinHash, createdAt) VALUES (?, ?, ?);
+
+selectDocumentLock:
+SELECT * FROM DocumentLock WHERE documentId = ?;
+
+selectAllDocumentLocks:
+SELECT * FROM DocumentLock;
+
+removeDocumentLock:
+DELETE FROM DocumentLock WHERE documentId = ?;
+
+-- Local backup restore helpers (INSERT OR REPLACE so restoring twice is safe)
+
+restorePileModel:
+INSERT OR REPLACE INTO PileModel(id, name, iconId, colorNumber) VALUES (?, ?, ?, ?);
+
+restoreDocumentModel:
+INSERT OR REPLACE INTO DocumentModel(
+    id, title, imageIds, creationDateTime, modificationDateTime, documentStatus,
+    documentPileIds, documentDetails, documentNote, documentOrganizationIds, isIncomingPdf
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+restoreDocumentImage:
+INSERT OR REPLACE INTO DocumentImage(id, isDraft, crop, filter, rotation) VALUES (?, ?, ?, ?, ?);
+
+restoreFavoriteDocument:
+INSERT OR IGNORE INTO FavoriteDocument(documentId, createdAt) VALUES (?, ?);
+
+restoreDocumentText:
+INSERT OR REPLACE INTO DocumentText(documentId, text, updatedAt) VALUES (?, ?, ?);
+
+restoreDocumentLock:
+INSERT OR REPLACE INTO DocumentLock(documentId, pinHash, createdAt) VALUES (?, ?, ?);

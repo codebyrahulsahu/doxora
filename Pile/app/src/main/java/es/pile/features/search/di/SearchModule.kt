@@ -12,7 +12,7 @@ val searchModule = module {
     viewModel { params ->
         SearchViewModel(
             pileId = params.getOrNull(),
-            requestBitmapLoadUseCase = get(),
+            requestCoverThumbnailUseCase = get(),
             searchDocumentsUseCase = get(),
             pileRepository = get(),
             documentRepository = get(),

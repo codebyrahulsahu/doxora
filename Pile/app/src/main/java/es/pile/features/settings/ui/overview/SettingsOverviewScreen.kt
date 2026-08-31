@@ -1,9 +1,13 @@
 package es.pile.features.settings.ui.overview
 
+import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.S
 import android.os.Build.VERSION_CODES.TIRAMISU
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,14 +29,16 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,6 +59,7 @@ import es.pile.core.domain.models.AppTheme
 import es.pile.core.domain.models.ImageResolution
 import es.pile.core.domain.models.ImageResolution.LOW
 import es.pile.core.domain.models.ImageResolution.ORIGINAL
+import es.pile.core.ui.composables.LoadingAlert
 import es.pile.core.ui.composables.LoadingWrapper
 import es.pile.core.ui.theme.PileTheme
 import es.pile.features.settings.ui.composables.ItemPosition
@@ -60,7 +67,14 @@ import es.pile.features.settings.ui.composables.SettingsItem
 import es.pile.features.settings.ui.composables.SettingsRadioButton
 import es.pile.features.settings.ui.composables.SettingsSection
 import es.pile.features.settings.ui.composables.SettingsTopBar
+import es.pile.features.settings.ui.composables.SUPPORT_EMAIL
+import es.pile.features.settings.ui.composables.SUPPORT_GITHUB
+import es.pile.features.settings.ui.composables.SUPPORT_INSTAGRAM
+import es.pile.features.settings.ui.composables.SupportContactsCard
 import org.koin.androidx.compose.koinViewModel
+
+/** MIME type used when the user picks where the local backup file is written. */
+private const val BACKUP_MIME_TYPE = "application/zip"
 
 @Composable
 fun SettingsOverviewScreen(
@@ -71,9 +85,51 @@ fun SettingsOverviewScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
+    var showRestoreWarning by rememberSaveable { mutableStateOf(false) }
+
+    val exportBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument(BACKUP_MIME_TYPE)
+    ) { uri ->
+        if (uri != null) viewModel.handleEvent(SettingsOverviewEvent.OnBackupExported(uri))
+    }
+
+    val importBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+
+        pendingRestoreUri = uri
+        showRestoreWarning = true
+    }
+
+    val context = LocalContext.current
+
     SettingsOverviewContent(
         state = state,
         navigateToFavorites = navigateToFavorites,
+        onExportBackup = {
+            exportBackupLauncher.launch("pile-backup-${System.currentTimeMillis()}.zip")
+        },
+        onImportBackup = {
+            importBackupLauncher.launch(
+                arrayOf(BACKUP_MIME_TYPE, "application/octet-stream", "*/*")
+            )
+        },
+        onOpenUrl = { url ->
+            runCatching {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            }
+        },
+        onSendEmail = { address ->
+            runCatching {
+                context.startActivity(
+                    Intent(Intent.ACTION_SENDTO).apply {
+                        data = Uri.parse("mailto:$address")
+                    }
+                )
+            }
+        },
         onEvent = { event ->
             when (event) {
                 is SettingsOverviewEvent.OnBackClicked -> popBackStack()
@@ -82,6 +138,39 @@ fun SettingsOverviewScreen(
             }
         }
     )
+
+    if (showRestoreWarning) {
+        val uri = pendingRestoreUri
+
+        AlertDialog(
+            onDismissRequest = {
+                showRestoreWarning = false
+                pendingRestoreUri = null
+            },
+            title = { Text(stringResource(R.string.restore_backup)) },
+            text = { Text(stringResource(R.string.restore_backup_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showRestoreWarning = false
+                    pendingRestoreUri = null
+
+                    if (uri != null) {
+                        viewModel.handleEvent(SettingsOverviewEvent.OnBackupRestored(uri))
+                    }
+                }) {
+                    Text(stringResource(R.string.restore_backup))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showRestoreWarning = false
+                    pendingRestoreUri = null
+                }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 }
 
 @Preview(showBackground = true)
@@ -105,6 +194,10 @@ fun SettingsOverviewContent(
     state: SettingsOverviewState,
     onEvent: (SettingsOverviewEvent) -> Unit,
     navigateToFavorites: () -> Unit = {},
+    onExportBackup: () -> Unit = {},
+    onImportBackup: () -> Unit = {},
+    onOpenUrl: (String) -> Unit = {},
+    onSendEmail: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -112,6 +205,16 @@ fun SettingsOverviewContent(
     var showAppThemeDialog by rememberSaveable { mutableStateOf(false) }
     var showEditProfileDialog by rememberSaveable { mutableStateOf(false) }
     var supportDialog by remember { mutableStateOf(SupportDialog.NONE) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    LaunchedEffect(state.backupMessage) {
+        state.backupMessage?.let { uiText ->
+            snackbarHostState.showSnackbar(message = uiText.asString(context))
+            onEvent(SettingsOverviewEvent.OnBackupMessageDismissed)
+        }
+    }
 
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -122,7 +225,8 @@ fun SettingsOverviewContent(
                 popBackStack = { onEvent(SettingsOverviewEvent.OnBackClicked) },
                 scrollBehavior = scrollBehavior
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
         LoadingWrapper(state.isLoading) {
             Column(
@@ -151,25 +255,29 @@ fun SettingsOverviewContent(
                     onResolutionChange = { onEvent(SettingsOverviewEvent.OnResolutionClicked) }
                 )
 
-                SettingsSection(title = "Library") {
-                    SettingsItem(
-                        itemPosition = ItemPosition.SINGLE,
-                        title = "Favorites",
-                        subtitle = "Your starred documents",
-                        leadingIcon = { Icon(Icons.Default.Star, contentDescription = null) },
-                        onAction = navigateToFavorites
-                    )
-                }
+                LibrarySection(
+                    onFavoritesClick = navigateToFavorites
+                )
 
-                LocalBackupSection()
+                LocalBackupSection(
+                    enabled = !state.isWorkingOnBackup,
+                    onExportBackup = onExportBackup,
+                    onImportBackup = onImportBackup
+                )
 
                 AboutSupportSection(
+                    onOpenUrl = onOpenUrl,
+                    onSendEmail = onSendEmail,
                     onAbout = { supportDialog = SupportDialog.ABOUT },
                     onHelp = { supportDialog = SupportDialog.HELP },
                     onPrivacy = { supportDialog = SupportDialog.PRIVACY }
                 )
             }
         }
+    }
+
+    if (state.isWorkingOnBackup) {
+        LoadingAlert(title = stringResource(R.string.working_on_backup))
     }
 
     if (showAppThemeDialog) {
@@ -254,12 +362,8 @@ private fun UserAccountSection(
                     )
                 }
 
-                IconButton(onClick = onEditProfile) {
-                    Icon(
-                        painter = painterResource(R.drawable.edit_24px),
-                        contentDescription = stringResource(R.string.edit_profile),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                TextButton(onClick = onEditProfile) {
+                    Text(stringResource(R.string.edit_profile))
                 }
             }
         }
@@ -329,31 +433,58 @@ private fun ResolutionSection(
 }
 
 @Composable
-private fun LocalBackupSection(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
+private fun LibrarySection(
+    modifier: Modifier = Modifier,
+    onFavoritesClick: () -> Unit
+) {
+    SettingsSection(modifier = modifier, title = stringResource(R.string.library)) {
+        SettingsItem(
+            itemPosition = ItemPosition.SINGLE,
+            title = stringResource(R.string.favorites),
+            subtitle = stringResource(R.string.favorites_subtitle),
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            onAction = onFavoritesClick
+        )
+    }
+}
+
+/**
+ * Everything here stays on the device: the backup is a single file written exactly
+ * where the user picks it, and it can only be read back from this same screen.
+ */
+@Composable
+private fun LocalBackupSection(
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onExportBackup: () -> Unit,
+    onImportBackup: () -> Unit
+) {
     SettingsSection(modifier = modifier, title = stringResource(R.string.local_backup_restore)) {
         SettingsItem(
+            enabled = enabled,
             itemPosition = ItemPosition.TOP,
             title = stringResource(R.string.export_backup),
-            subtitle = stringResource(R.string.local_backup_restore_body),
-            leadingIcon = { Icon(painterResource(R.drawable.save_24px), contentDescription = null) },
-            onAction = {
-                context.startActivity(android.content.Intent(android.content.Intent.ACTION_CREATE_DOCUMENT).apply {
-                    type = "application/json"
-                    putExtra(android.content.Intent.EXTRA_TITLE, "pile-backup.json")
-                })
-            }
+            subtitle = stringResource(R.string.export_backup_body),
+            leadingIcon = {
+                Icon(painterResource(R.drawable.save_24px), contentDescription = null)
+            },
+            onAction = onExportBackup
         )
         SettingsItem(
+            enabled = enabled,
             itemPosition = ItemPosition.BOTTOM,
             title = stringResource(R.string.restore_backup),
-            leadingIcon = { Icon(painterResource(R.drawable.download_24px), contentDescription = null) },
-            onAction = {
-                context.startActivity(android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT).apply {
-                    type = "application/json"
-                    addCategory(android.content.Intent.CATEGORY_OPENABLE)
-                })
-            }
+            subtitle = stringResource(R.string.restore_backup_body),
+            leadingIcon = {
+                Icon(painterResource(R.drawable.download_24px), contentDescription = null)
+            },
+            onAction = onImportBackup
         )
     }
 }
@@ -361,11 +492,18 @@ private fun LocalBackupSection(modifier: Modifier = Modifier) {
 @Composable
 private fun AboutSupportSection(
     modifier: Modifier = Modifier,
+    onOpenUrl: (String) -> Unit,
+    onSendEmail: (String) -> Unit,
     onAbout: () -> Unit,
     onHelp: () -> Unit,
     onPrivacy: () -> Unit
 ) {
     SettingsSection(modifier = modifier, title = stringResource(R.string.about_support)) {
+        SupportContactsCard(
+            onOpenUrl = onOpenUrl,
+            onSendEmail = onSendEmail
+        )
+
         SettingsItem(
             itemPosition = ItemPosition.TOP,
             title = stringResource(R.string.about_pile),
@@ -470,8 +608,7 @@ private fun AboutPileDialog(onDismiss: () -> Unit) {
         text = {
             Column {
                 Text(stringResource(R.string.about_pile_body))
-                SupportQrCode(modifier = Modifier.padding(top = 16.dp))
-                Text(stringResource(R.string.support_details), modifier = Modifier.padding(top = 12.dp))
+
                 Text(
                     text = stringResource(R.string.app_version, version),
                     style = MaterialTheme.typography.bodySmall,
@@ -489,20 +626,24 @@ private fun AboutPileDialog(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun SupportQrCode(modifier: Modifier = Modifier) {
-    androidx.compose.foundation.Image(
-        painter = painterResource(R.drawable.support_qr),
-        contentDescription = stringResource(R.string.support_details),
-        modifier = modifier.size(132.dp).clip(RoundedCornerShape(8.dp))
-    )
-}
-
-@Composable
 private fun HelpSupportDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.help_support)) },
-        text = { Text(stringResource(R.string.help_support_body)) },
+        text = {
+            Column {
+                Text(stringResource(R.string.help_support_body))
+                Text(
+                    text = stringResource(
+                        R.string.support_details,
+                        SUPPORT_INSTAGRAM,
+                        SUPPORT_GITHUB,
+                        SUPPORT_EMAIL
+                    ),
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+            }
+        },
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.ok))

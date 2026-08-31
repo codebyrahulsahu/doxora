@@ -7,11 +7,12 @@ import es.pile.DocumentModel
 import es.pile.R
 import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.repositories.BitmapCacheRepository
+import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.repositories.FavoritesRepository
 import es.pile.core.domain.useCases.CreatePileUseCase
 import es.pile.core.domain.useCases.GetDocumentSizesUseCase
-import es.pile.core.domain.useCases.RequestBitmapLoadUseCase
+import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
 import es.pile.core.ui.util.UiText
 import es.pile.features.home.domain.models.TemporaryDocumentBackup
 import es.pile.features.home.domain.schedulers.CleanupScheduler
@@ -32,12 +33,13 @@ class HomeViewModel(
     private val manageTemporaryDocumentUseCase: ManageTemporaryDocumentUseCase,
     private val getHomeDataUseCase: GetHomeDataUseCase,
     private val createPileUseCase: CreatePileUseCase,
-    private val requestBitmapLoadUseCase: RequestBitmapLoadUseCase,
+    private val requestCoverThumbnailUseCase: RequestCoverThumbnailUseCase,
     private val getDocumentSizesUseCase: GetDocumentSizesUseCase,
     private val cleanupScheduler: CleanupScheduler,
     private val bitmapCacheRepository: BitmapCacheRepository,
     private val fileRepository: FileRepository,
-    private val favoritesRepository: FavoritesRepository
+    private val favoritesRepository: FavoritesRepository,
+    private val documentLockRepository: DocumentLockRepository
 ) : ViewModel() {
     private var _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
@@ -58,11 +60,16 @@ class HomeViewModel(
             }
         }
         viewModelScope.launch {
+            documentLockRepository.lockedDocumentIds.collect { ids ->
+                _state.update { it.copy(lockedDocumentIds = ids) }
+            }
+        }
+        viewModelScope.launch {
             getHomeDataUseCase().collect { homeData ->
                 val documentCoverItems = homeData.documents.map { documentModel ->
                     DocumentCoverItem(
                         document = documentModel,
-                        coverImageCacheKey = bitmapCacheRepository.getImageKey(documentModel, 0)
+                        coverImageCacheKey = bitmapCacheRepository.getCoverKey(documentModel)
                     )
                 }
 
@@ -96,7 +103,7 @@ class HomeViewModel(
                     event.documentId !in state.value.favoriteDocumentIds
                 )
             }
-            is HomeEvent.OnImageDisplayed -> requestBitmapLoad(event.document)
+            is HomeEvent.OnImageDisplayed -> requestCoverThumbnail(event.document)
 
             is HomeEvent.OnRemoveDraftDocument -> removeDraftDocument()
             HomeEvent.OnRestoreDraftDocument -> restoreDraftDocument()
@@ -152,9 +159,9 @@ class HomeViewModel(
         }
     }
 
-    private fun requestBitmapLoad(document: DocumentModel) {
+    private fun requestCoverThumbnail(document: DocumentModel) {
         viewModelScope.launch {
-            requestBitmapLoadUseCase(document, 0)
+            requestCoverThumbnailUseCase(document)
         }
     }
 

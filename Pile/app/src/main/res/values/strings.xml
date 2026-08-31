@@ -162,23 +162,61 @@
     <string name="edit_profile">Edit profile</string>
     <string name="save">Save</string>
 
-    <string name="storage_security">Storage &amp; Security</string>
     <string name="local_backup_restore">Local Backup &amp; Restore</string>
     <string name="local_backup_restore_body">Export your data to a file on this device, or restore it later.</string>
     <string name="export_backup">Export backup</string>
+    <string name="export_backup_body">Save every pile, document, favorite and setting into a single file on this device.</string>
     <string name="restore_backup">Restore backup</string>
+    <string name="restore_backup_body">Read back a backup file stored on this device and merge it into the app.</string>
+    <string name="working_on_backup">Working on your backup…</string>
+    <string name="backup_exported">Backup exported with %1$d documents</string>
+    <string name="backup_restored">Backup restored with %1$d documents</string>
+    <string name="error_exporting_backup">Error exporting the backup</string>
+    <string name="error_restoring_backup">That file is not a valid Pile backup</string>
+
+    <string name="library">Library</string>
+    <string name="favorites">Favorites</string>
+    <string name="favorites_subtitle">Every document you marked with a star</string>
+    <string name="no_favorites">You haven\'t marked any document as favorite yet. Tap the star on a document to find it here.</string>
     <string name="add_to_favorites">Add to favorites</string>
     <string name="remove_from_favorites">Remove from favorites</string>
 
+    <!-- Text recognition (OCR) -->
+    <string name="recognized_text">Recognized Text</string>
+    <string name="recognized_text_body">Read the text printed on your document. Everything is processed on your device.</string>
+    <string name="recognize_text">Recognize Text</string>
+    <string name="recognize_again">Recognize again</string>
+    <string name="recognizing_text">Recognizing text…</string>
+    <string name="text_recognized">Text recognized</string>
+    <string name="no_text_recognized">No text was found in this document</string>
+    <string name="error_recognizing_text">Error recognizing the text</string>
+    <string name="copy">Copy</string>
+
+    <!-- Per document PIN protection -->
+    <string name="lock_document">Lock with PIN</string>
+    <string name="set_pin_body">Choose a %1$d digit PIN for this document.</string>
+    <string name="confirm_pin">Confirm your PIN</string>
+    <string name="pins_do_not_match">The PINs don\'t match, try again</string>
+    <string name="remove_document_lock">Remove PIN lock</string>
+    <string name="remove_document_lock_body">Type the current PIN to unlock this document.</string>
+    <string name="locked_document_title">Locked document</string>
+    <string name="locked_document_body">Type the PIN to open this document.</string>
+    <string name="document_locked">Locked with PIN</string>
+    <string name="incorrect_pin">Incorrect PIN, try again</string>
+
     <string name="about_support">About &amp; Support</string>
+    <string name="support_qr_description">Support QR code</string>
+    <string name="support_qr_hint">Scan this QR code to reach out for support</string>
+    <string name="instagram">Instagram</string>
+    <string name="github">GitHub</string>
+    <string name="email">Email</string>
     <string name="about_pile">About Pile</string>
     <string name="about_pile_body">Pile is a privacy-first document manager. All your documents are stored locally on your device, and Piles help you organize them exactly how you like.</string>
-    <string name="support_details">Support QR code
-Instagram: @rahulsahux004
-GitHub: codebyrahulsahu
-Email: kanhaiyalaljojawar@gmail.com</string>
+    <string name="support_details">Instagram: %1$s
+GitHub: %2$s
+Email: %3$s</string>
     <string name="help_support">Help &amp; Support</string>
-    <string name="help_support_body">Need a hand? Visit the project repository to open an issue, or contact us at support@pileapp.es</string>
+    <string name="help_support_body">Need a hand? Open an issue on the GitHub repository, or write us an email and we will get back to you.</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="privacy_policy_body">Pile stores all your documents and data locally on your device. We don\'t collect, upload or share your personal files with anyone.</string>
     <string name="app_version">Version %1$s</string>
