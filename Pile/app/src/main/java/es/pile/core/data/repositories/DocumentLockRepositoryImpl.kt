@@ -60,7 +60,7 @@ class DocumentLockRepositoryImpl(
             .map { it.documentId to it.pinHash }
     }
 
-    override suspend fun restoreLocks(locks: List<Pair<String, String>>) = withContext(ioDispatcher) {
+    override suspend fun restoreLocks(locks: List<Pair<String, String>>): Unit = withContext(ioDispatcher) {
         val createdAt = Instant.now().toString()
         locks.forEach { (documentId, pinHash) ->
             databaseQueries.upsertDocumentLock(
