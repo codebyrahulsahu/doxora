@@ -43,6 +43,32 @@ interface BitmapCacheRepository {
     )
 
     /**
+     * Returns the unique key used in the map for the cover (first page) thumbnail
+     * of a document.
+     *
+     * The cover has its own key so a small, cheap to decode bitmap can be used in the
+     * lists while the full resolution page stays available for the detail view.
+     *
+     * @param document The document model containing metadata.
+     * @return The unique key for the document cover.
+     */
+    fun getCoverKey(document: DocumentModel): String
+
+    /**
+     * Loads a downscaled cover (first page / first image) of a document into the cache.
+     * If the cover is already cached, this operation does nothing.
+     *
+     * @param file The file containing the first page of the document.
+     * @param document The document model containing metadata.
+     * @param documentImage Additional metadata associated with the image (optional).
+     */
+    suspend fun loadCoverThumbnail(
+        file: File,
+        document: DocumentModel,
+        documentImage: DocumentImage? = null
+    )
+
+    /**
      * Returns the unique key used in the map for an image thumbnail.
      *
      * @param imageId The unique ID of the image.

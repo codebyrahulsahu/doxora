@@ -44,6 +44,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -119,6 +123,10 @@ import es.pile.core.ui.composables.Pile
 import es.pile.core.ui.composables.SelectPilesBottomSheet
 import es.pile.core.ui.composables.SwipeBox
 import es.pile.core.ui.theme.PileTheme
+import es.pile.features.documentDetail.ui.composables.DocumentLockContent
+import es.pile.features.documentDetail.ui.composables.DocumentTextSection
+import es.pile.features.documentDetail.ui.composables.RemoveDocumentPinDialog
+import es.pile.features.documentDetail.ui.composables.SetDocumentPinDialog
 import es.pile.features.documentDetail.ui.composables.SectionTitleBar
 import es.pile.features.documentDetail.ui.composables.SimpleTextField
 import kotlinx.coroutines.delay
@@ -148,15 +156,24 @@ fun DocumentDetailScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val bitmapCache by viewModel.bitmapCache.collectAsStateWithLifecycle()
 
-    DocumentDetailContent(
-        modifier = modifier,
-        state = state,
-        bitmapCache = bitmapCache,
-        onEvent = { viewModel.handleEvent(it) },
-        navigateToPileDetail = navigateToPileDetail,
-        navigateToEditDocument = navigateToEditDocument,
-        popBackStack = popBackStack
-    )
+    if (state.isLocked && !state.isUnlocked) {
+        DocumentLockContent(
+            modifier = modifier,
+            onUnlock = { pin -> viewModel.unlockDocument(pin) },
+            popBackStack = popBackStack
+        )
+    } else {
+        DocumentDetailContent(
+            modifier = modifier,
+            state = state,
+            bitmapCache = bitmapCache,
+            onEvent = { viewModel.handleEvent(it) },
+            onRemoveDocumentLock = { pin -> viewModel.removeDocumentLock(pin) },
+            navigateToPileDetail = navigateToPileDetail,
+            navigateToEditDocument = navigateToEditDocument,
+            popBackStack = popBackStack
+        )
+    }
 }
 
 @Preview(showBackground = true)
@@ -190,6 +207,7 @@ fun DocumentDetailPreview() {
             state = state,
             bitmapCache = emptyMap(),
             onEvent = {},
+            onRemoveDocumentLock = { true },
             navigateToPileDetail = {},
             navigateToEditDocument = {},
             popBackStack = {}
@@ -204,6 +222,7 @@ private fun DocumentDetailContent(
     state: DocumentDetailState,
     bitmapCache: Map<String, Bitmap>,
     onEvent: (DocumentDetailEvent) -> Unit,
+    onRemoveDocumentLock: suspend (pin: String) -> Boolean,
     navigateToPileDetail: (pileId: String) -> Unit,
     navigateToEditDocument: (documentId: String) -> Unit,
     popBackStack: () -> Unit,
@@ -212,6 +231,8 @@ private fun DocumentDetailContent(
     var showDeleteDocumentAlert by rememberSaveable { mutableStateOf(false) }
     var showDocumentPilesBottomSheet by rememberSaveable { mutableStateOf(false) }
     var showNewPileAlert by rememberSaveable { mutableStateOf(false) }
+    var showSetPinAlert by rememberSaveable { mutableStateOf(false) }
+    var showRemovePinAlert by rememberSaveable { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
     val hapticFeedback = LocalHapticFeedback.current
@@ -266,7 +287,14 @@ private fun DocumentDetailContent(
         topBar = {
             ScreenTopAppBar(
                 popBackStack = popBackStack,
-                title = state.documentModel?.title ?: ""
+                title = state.documentModel?.title ?: "",
+                isFavorite = state.isFavorite,
+                onFavoriteClick = { onEvent(DocumentDetailEvent.OnFavoriteToggled) },
+                isLocked = state.isLocked,
+                onLockClick = {
+                    if (state.isLocked) showRemovePinAlert = true
+                    else showSetPinAlert = true
+                }
             )
         },
         floatingActionButtonPosition = FabPosition.Center,
@@ -396,6 +424,18 @@ private fun DocumentDetailContent(
 
                     item { Spacer(Modifier.height(8.dp)) }
 
+                    item {
+                        DocumentTextSection(
+                            recognizedText = state.recognizedText,
+                            isRecognizing = state.isRecognizingText,
+                            onRecognizeText = { onEvent(DocumentDetailEvent.OnRecognizeText) },
+                            onTextChanged = { onEvent(DocumentDetailEvent.OnUpdateRecognizedText(it)) },
+                            onDeleteText = { onEvent(DocumentDetailEvent.OnDeleteRecognizedText) }
+                        )
+                    }
+
+                    item { Spacer(Modifier.height(8.dp)) }
+
                     documentPilesSection(
                         documentPileModels = state.documentPileModels ?: emptyList(),
                         onPileClick = {
@@ -460,6 +500,29 @@ private fun DocumentDetailContent(
         )
     }
 
+    if (showSetPinAlert) {
+        SetDocumentPinDialog(
+            onDismiss = { showSetPinAlert = false },
+            onConfirm = { pin ->
+                showSetPinAlert = false
+                onEvent(DocumentDetailEvent.OnLockDocument(pin))
+            }
+        )
+    }
+
+    if (showRemovePinAlert) {
+        RemoveDocumentPinDialog(
+            onDismiss = { showRemovePinAlert = false },
+            onConfirm = { pin ->
+                val removed = onRemoveDocumentLock(pin)
+
+                if (removed) showRemovePinAlert = false
+
+                removed
+            }
+        )
+    }
+
     if (showNewPileAlert) {
         AlertNewPile(
             onDismiss = { showNewPileAlert = false },
@@ -483,6 +546,10 @@ private fun ScreenTopAppBar(
     modifier: Modifier = Modifier,
     title: String,
     popBackStack: () -> Unit,
+    isFavorite: Boolean = false,
+    onFavoriteClick: () -> Unit = {},
+    isLocked: Boolean = false,
+    onLockClick: () -> Unit = {}
 ) {
     TopAppBar(
         modifier = modifier,
@@ -493,6 +560,39 @@ private fun ScreenTopAppBar(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(end = 16.dp)
             )
+        },
+        actions = {
+            IconButton(onClick = onFavoriteClick) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                    contentDescription = if (isFavorite) {
+                        stringResource(R.string.remove_from_favorites)
+                    } else {
+                        stringResource(R.string.add_to_favorites)
+                    },
+                    tint = if (isFavorite) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
+
+            IconButton(onClick = onLockClick) {
+                Icon(
+                    imageVector = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                    contentDescription = if (isLocked) {
+                        stringResource(R.string.remove_document_lock)
+                    } else {
+                        stringResource(R.string.lock_document)
+                    },
+                    tint = if (isLocked) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
         },
         navigationIcon = {
             FilledIconButton(

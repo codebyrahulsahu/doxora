@@ -60,8 +60,44 @@ class BitmapCacheRepositoryImpl(
         }
     }
 
+    override fun getCoverKey(document: DocumentModel): String = "cover_${document.id}"
+
+    override suspend fun loadCoverThumbnail(
+        file: File,
+        document: DocumentModel,
+        documentImage: DocumentImage?
+    ) = withContext(ioDispatcher) {
+        val coverKey = getCoverKey(document)
+
+        if (_bitmapCache.value.containsKey(coverKey)) return@withContext
+        if (!file.exists()) return@withContext
+
+        val bitmap = if (document.isIncomingPdf) {
+            pdfRenderHelper.renderPageToBitmap(file, pageIndex = 0, width = COVER_SIZE)
+        } else {
+            imageTransformationHelper.transform(
+                file = file,
+                rotation = documentImage?.rotation?.toInt() ?: 0,
+                cropData = documentImage?.crop,
+                filter = ImageFilterType.fromId(documentImage?.filter?.toInt() ?: 0),
+                reqSize = COVER_SIZE
+            )?.bitmap
+        }
+
+        if (bitmap != null) {
+            _bitmapCache.update { currentCache ->
+                currentCache + (coverKey to bitmap)
+            }
+        }
+    }
+
     override fun getImageThumbnailKey(imageId: String, filterId: Int): String =
         "${imageId}_filter_${filterId}"
+
+    companion object {
+        /** Covers are only shown as small thumbnails, decoding them small keeps the lists fast. */
+        private const val COVER_SIZE = 320
+    }
 
     override suspend fun loadImageThumbnail(
         imageFile: File,

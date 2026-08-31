@@ -8,11 +8,13 @@ import es.pile.R
 import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentStatusConstants.TEMPORARY
 import es.pile.core.domain.repositories.BitmapCacheRepository
+import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
+import es.pile.core.domain.repositories.FavoritesRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.repositories.PileModelRepository
 import es.pile.core.domain.useCases.GetDocumentSizesUseCase
-import es.pile.core.domain.useCases.RequestBitmapLoadUseCase
+import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
 import es.pile.core.ui.util.UiText
 import es.pile.features.home.domain.useCases.CreateDocumentUseCase
 import es.pile.features.pileDetail.domain.usecases.DeletePileUseCase
@@ -30,7 +32,7 @@ import kotlinx.coroutines.launch
 
 class PileDetailViewModel(
     private val pileId: String,
-    private val requestBitmapLoadUseCase: RequestBitmapLoadUseCase,
+    private val requestCoverThumbnailUseCase: RequestCoverThumbnailUseCase,
     private val createDocumentUseCase: CreateDocumentUseCase,
     private val updatePileUseCase: UpdatePileUseCase,
     private val deletePileUseCase: DeletePileUseCase,
@@ -38,7 +40,9 @@ class PileDetailViewModel(
     private val pileModelRepository: PileModelRepository,
     private val documentModelRepository: DocumentModelRepository,
     private val bitmapCacheRepository: BitmapCacheRepository,
-    private val fileRepository: FileRepository
+    private val fileRepository: FileRepository,
+    private val favoritesRepository: FavoritesRepository,
+    private val documentLockRepository: DocumentLockRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(PileDetailState())
     val state: StateFlow<PileDetailState> = _state.asStateFlow()
@@ -51,6 +55,16 @@ class PileDetailViewModel(
     private var pendingImportAction: (() -> Unit)? = null
 
     init {
+        viewModelScope.launch {
+            favoritesRepository.favoriteDocumentIds.collect { ids ->
+                _state.update { it.copy(favoriteDocumentIds = ids.toSet()) }
+            }
+        }
+        viewModelScope.launch {
+            documentLockRepository.lockedDocumentIds.collect { ids ->
+                _state.update { it.copy(lockedDocumentIds = ids) }
+            }
+        }
         viewModelScope.launch {
             val pileFlow = pileModelRepository.getPileModelById(pileId)
             val allDocumentsFlow = documentModelRepository.documentModels
@@ -66,7 +80,7 @@ class PileDetailViewModel(
                 val documentCoverItems = pileDocuments.map { documentModel ->
                     DocumentCoverItem(
                         document = documentModel,
-                        coverImageCacheKey = bitmapCacheRepository.getImageKey(documentModel, 0)
+                        coverImageCacheKey = bitmapCacheRepository.getCoverKey(documentModel)
                     )
                 }
 
@@ -87,7 +101,14 @@ class PileDetailViewModel(
 
     fun handleEvent(event: PileDetailEvent) {
         when (event) {
-            is PileDetailEvent.OnImageDisplayed -> requestBitmapLoad(event.document)
+            is PileDetailEvent.OnImageDisplayed -> requestCoverThumbnail(event.document)
+
+            is PileDetailEvent.OnFavoriteToggled -> viewModelScope.launch {
+                favoritesRepository.setFavorite(
+                    event.documentId,
+                    event.documentId !in state.value.favoriteDocumentIds
+                )
+            }
             PileDetailEvent.OnDeletePile -> deletePile()
             is PileDetailEvent.OnPileChange -> updatePile(event.name, event.iconId, event.color)
 
@@ -139,9 +160,9 @@ class PileDetailViewModel(
         }
     }
 
-    private fun requestBitmapLoad(document: DocumentModel) {
+    private fun requestCoverThumbnail(document: DocumentModel) {
         viewModelScope.launch {
-            requestBitmapLoadUseCase(document, 0)
+            requestCoverThumbnailUseCase(document)
         }
     }
 

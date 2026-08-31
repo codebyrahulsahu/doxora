@@ -5,6 +5,7 @@ import es.pile.features.documentDetail.domain.helper.DocumentOpener
 import es.pile.features.documentDetail.domain.useCases.DeleteDocumentUseCase
 import es.pile.features.documentDetail.domain.useCases.GetDocumentDetailDataUseCase
 import es.pile.features.documentDetail.domain.useCases.ManageDocumentPileUseCase
+import es.pile.features.documentDetail.domain.useCases.RecognizeDocumentTextUseCase
 import es.pile.features.documentDetail.domain.useCases.UpdateDocumentDetailsUseCase
 import es.pile.features.documentDetail.domain.useCases.export.ExportDocumentUseCase
 import es.pile.features.documentDetail.domain.useCases.export.GeneratePdfUseCase
@@ -26,6 +27,7 @@ val documentDetailModule = module {
     factoryOf(::GetUpToDatePdfUseCase)
     factoryOf(::ExportDocumentUseCase)
     factoryOf(::ManageDocumentPileUseCase)
+    factoryOf(::RecognizeDocumentTextUseCase)
 
     viewModelOf(::DocumentDetailViewModel)
 }

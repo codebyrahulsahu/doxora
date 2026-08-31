@@ -321,7 +321,12 @@ fun PileDetailContent(
                         itemDocumentsVerticalList(
                             documents = sortedDocuments,
                             documentSizes = state.documentSizes,
-                            onDocumentClick = navigateToDocumentDetail
+                            bitmapCache = bitmapCache,
+                            onLoadBitmap = { onEvent(PileDetailEvent.OnImageDisplayed(it)) },
+                            lockedDocumentIds = state.lockedDocumentIds,
+                            onDocumentClick = navigateToDocumentDetail,
+                            favoriteDocumentIds = state.favoriteDocumentIds,
+                            onFavoriteToggle = { onEvent(PileDetailEvent.OnFavoriteToggled(it)) }
                         )
 
                         item {

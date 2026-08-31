@@ -26,6 +26,7 @@ kotlinxSerializationJson = "1.11.0"
 exifinterface = "1.4.2"
 reorderable = "3.1.0"
 cropKit = "1.0.7-BETA02"
+mlkitTextRecognition = "16.0.0"
 
 [libraries]
 # --- Compose ---
@@ -81,6 +82,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
 reorderable-list = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 crop-kit = { module = "com.github.rubenalfon:crop-kit", version.ref = "cropKit" }
+mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkitTextRecognition" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

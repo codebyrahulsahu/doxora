@@ -5,7 +5,7 @@ import es.pile.PileModel
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
 import es.pile.core.domain.repositories.PileModelRepository
-import es.pile.core.domain.useCases.RequestBitmapLoadUseCase
+import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
 import es.pile.features.search.domain.useCases.SearchDocumentsUseCase
 import io.mockk.every
 import io.mockk.mockk
@@ -25,7 +25,7 @@ import kotlin.test.assertEquals
 @OptIn(ExperimentalCoroutinesApi::class)
 class SearchViewModelTest {
 
-    private val requestBitmapLoadUseCase: RequestBitmapLoadUseCase = mockk()
+    private val requestCoverThumbnailUseCase: RequestCoverThumbnailUseCase = mockk(relaxed = true)
     private val searchDocumentsUseCase: SearchDocumentsUseCase = mockk()
     private val pileRepository: PileModelRepository = mockk()
     private val documentRepository: DocumentModelRepository = mockk()
@@ -54,7 +54,7 @@ class SearchViewModelTest {
         // When
         val viewModel = SearchViewModel(
             pileId = null,
-            requestBitmapLoadUseCase,
+            requestCoverThumbnailUseCase,
             searchDocumentsUseCase,
             pileRepository,
             documentRepository,
@@ -93,7 +93,7 @@ class SearchViewModelTest {
 
         val viewModel = SearchViewModel(
             pileId = null,
-            requestBitmapLoadUseCase,
+            requestCoverThumbnailUseCase,
             searchDocumentsUseCase,
             pileRepository,
             documentRepository,

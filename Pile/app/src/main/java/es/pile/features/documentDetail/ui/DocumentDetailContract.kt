@@ -15,6 +15,11 @@ data class DocumentDetailState(
     val allPiles: List<PileModel>? = null,
     val isDetailsEditing: Boolean = false,
     val isExporting: Boolean = false,
+    val recognizedText: String? = null,
+    val isRecognizingText: Boolean = false,
+    val isFavorite: Boolean = false,
+    val isLocked: Boolean = false,
+    val isUnlocked: Boolean = false,
     val userMessage: UiText? = null
 )
 
@@ -34,6 +39,15 @@ sealed interface DocumentDetailEvent {
     data object OnOpenDocument : DocumentDetailEvent
     data object OnShare : DocumentDetailEvent
     data object OnDownload : DocumentDetailEvent
+
+    // Text recognition (OCR)
+    data object OnRecognizeText : DocumentDetailEvent
+    data class OnUpdateRecognizedText(val newText: String) : DocumentDetailEvent
+    data object OnDeleteRecognizedText : DocumentDetailEvent
+
+    // Favorites and per document PIN protection
+    data object OnFavoriteToggled : DocumentDetailEvent
+    data class OnLockDocument(val pin: String) : DocumentDetailEvent
 
     data object OnMessageDismissed : DocumentDetailEvent
 }

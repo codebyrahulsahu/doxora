@@ -6,7 +6,7 @@ import es.pile.DocumentModel
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
 import es.pile.core.domain.repositories.PileModelRepository
-import es.pile.core.domain.useCases.RequestBitmapLoadUseCase
+import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
 import es.pile.features.search.domain.useCases.SearchDocumentsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +19,7 @@ import java.time.LocalDate
 
 class SearchViewModel(
     private val pileId: String?,
-    private val requestBitmapLoadUseCase: RequestBitmapLoadUseCase,
+    private val requestCoverThumbnailUseCase: RequestCoverThumbnailUseCase,
     private val searchDocumentsUseCase: SearchDocumentsUseCase,
     private val pileRepository: PileModelRepository,
     private val documentRepository: DocumentModelRepository,
@@ -78,7 +78,7 @@ class SearchViewModel(
         val filteredItems = filteredDocuments.map { document ->
             SearchItem(
                 document = document,
-                coverImageCacheKey = bitmapCacheRepository.getImageKey(document, 0)
+                coverImageCacheKey = bitmapCacheRepository.getCoverKey(document)
             )
         }
 
@@ -103,7 +103,7 @@ class SearchViewModel(
 
     private fun requestBitmapLoad(document: DocumentModel) {
         viewModelScope.launch {
-            requestBitmapLoadUseCase(document, 0)
+            requestCoverThumbnailUseCase(document)
         }
     }
 

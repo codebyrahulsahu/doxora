@@ -2,7 +2,9 @@ package es.pile.features.documentDetail.domain.useCases
 
 import es.pile.DocumentModel
 import es.pile.core.domain.repositories.DocumentImageRepository
+import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
+import es.pile.core.domain.repositories.DocumentTextRepository
 import es.pile.core.domain.repositories.FileRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -18,13 +20,18 @@ class DeleteDocumentUseCaseTest {
     private val documentModelRepository: DocumentModelRepository = mockk()
     private val documentImageRepository: DocumentImageRepository = mockk()
     private val fileRepository: FileRepository = mockk()
+    private val documentLockRepository: DocumentLockRepository = mockk(relaxed = true)
+    private val documentTextRepository: DocumentTextRepository = mockk(relaxed = true)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     private val testDispatcher = UnconfinedTestDispatcher()
     private val deleteDocumentUseCase = DeleteDocumentUseCase(
         testDispatcher,
         documentModelRepository,
         documentImageRepository,
-        fileRepository
+        fileRepository,
+        documentLockRepository,
+        documentTextRepository
     )
 
     @Test
@@ -46,5 +53,7 @@ class DeleteDocumentUseCaseTest {
         coVerify { documentImageRepository.deleteDocumentImage("img1") }
         coVerify { documentImageRepository.deleteDocumentImage("img2") }
         coVerify { fileRepository.deleteDocumentStorage(FileRepository.StorageType.PERSISTENT, "doc1") }
+        coVerify { documentLockRepository.removeLock("doc1") }
+        coVerify { documentTextRepository.deleteDocumentText("doc1") }
     }
 }

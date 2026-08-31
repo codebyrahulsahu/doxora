@@ -121,6 +121,9 @@ dependencies {
     // Crop images - My fork
     implementation(libs.crop.kit)
 
+    // Text recognition (OCR)
+    implementation(libs.mlkit.text.recognition)
+
     // Logging
     implementation(libs.napier)
 

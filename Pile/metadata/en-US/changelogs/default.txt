@@ -1,1 +1,6 @@
-Improved the app performance and fixed errors.
+- Favorites: star a document and find it in the new Favorites screen.
+- Document lists now show real thumbnails of your files instead of a generic icon.
+- Recognize Text: on-device OCR. The extracted text is selectable and editable.
+- Per document PIN lock. The global App Lock has been removed.
+- Local Backup & Restore: export your data to a file on your device and restore it later. Cloud Backup has been removed.
+- About & Support now shows the support QR code, Instagram, GitHub and email.
