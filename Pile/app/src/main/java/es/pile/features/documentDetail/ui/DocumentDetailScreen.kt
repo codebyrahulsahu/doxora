@@ -1,7 +1,7 @@
 package es.pile.features.documentDetail.ui
 
 import android.graphics.Bitmap
-import android.os.Build
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -118,7 +118,6 @@ import es.pile.PileModel
 import es.pile.R
 import es.pile.core.domain.models.DocumentDetail
 import es.pile.core.domain.models.DocumentExportFormat
-import es.pile.core.domain.models.DocumentLockType
 import es.pile.core.domain.models.StringDetail
 import es.pile.core.ui.composables.AlertNewPile
 import es.pile.core.ui.composables.LoadingAlert
@@ -127,11 +126,9 @@ import es.pile.core.ui.composables.Pile
 import es.pile.core.ui.composables.SelectPilesBottomSheet
 import es.pile.core.ui.composables.SwipeBox
 import es.pile.core.ui.theme.PileTheme
-import es.pile.features.documentDetail.ui.composables.ChooseDocumentLockTypeDialog
 import es.pile.features.documentDetail.ui.composables.DocumentLockContent
 import es.pile.features.documentDetail.ui.composables.DocumentTextSection
 import es.pile.features.documentDetail.ui.composables.RemoveDocumentLockDialog
-import es.pile.features.documentDetail.ui.composables.SetDocumentPatternDialog
 import es.pile.features.documentDetail.ui.composables.SetDocumentPinDialog
 import es.pile.features.documentDetail.ui.composables.SectionTitleBar
 import es.pile.features.documentDetail.ui.composables.SimpleTextField
@@ -165,7 +162,6 @@ fun DocumentDetailScreen(
     if (state.isLocked && !state.isUnlocked) {
         DocumentLockContent(
             modifier = modifier,
-            lockType = state.lockType,
             onUnlock = { secret -> viewModel.unlockDocument(secret) },
             popBackStack = popBackStack
         )
@@ -176,7 +172,11 @@ fun DocumentDetailScreen(
             bitmapCache = bitmapCache,
             onEvent = { viewModel.handleEvent(it) },
             onRemoveDocumentLock = { pin -> viewModel.removeDocumentLock(pin) },
-            onExportDocument = { format -> viewModel.handleEvent(DocumentDetailEvent.OnExportDocument(format)) },
+            onExportDocument = { format, folderUri ->
+                viewModel.handleEvent(
+                    DocumentDetailEvent.OnExportDocument(format, folderUri)
+                )
+            },
             navigateToPileDetail = navigateToPileDetail,
             navigateToEditDocument = navigateToEditDocument,
             popBackStack = popBackStack
@@ -204,7 +204,7 @@ fun DocumentDetailPreview() {
     val state = DocumentDetailState(
         documentModel = document,
         documentPileModels = listOf(
-            PileModel("1", "Pilas", "icon", 0xFF0000L)
+            PileModel("1", "Pilas", "icon", 0xFF0000L, 0)
         ),
         localDocumentDetails = emptyList(),
         pageCacheKeys = listOf("key1")
@@ -216,7 +216,7 @@ fun DocumentDetailPreview() {
             bitmapCache = emptyMap(),
             onEvent = {},
             onRemoveDocumentLock = { true },
-            onExportDocument = {},
+            onExportDocument = { _, _ -> },
             navigateToPileDetail = {},
             navigateToEditDocument = {},
             popBackStack = {}
@@ -232,7 +232,7 @@ private fun DocumentDetailContent(
     bitmapCache: Map<String, Bitmap>,
     onEvent: (DocumentDetailEvent) -> Unit,
     onRemoveDocumentLock: suspend (secret: String) -> Boolean,
-    onExportDocument: (DocumentExportFormat) -> Unit = {},
+    onExportDocument: (DocumentExportFormat, Uri?) -> Unit = { _, _ -> },
     navigateToPileDetail: (pileId: String) -> Unit,
     navigateToEditDocument: (documentId: String) -> Unit,
     popBackStack: () -> Unit,
@@ -241,9 +241,7 @@ private fun DocumentDetailContent(
     var showDeleteDocumentAlert by rememberSaveable { mutableStateOf(false) }
     var showDocumentPilesBottomSheet by rememberSaveable { mutableStateOf(false) }
     var showNewPileAlert by rememberSaveable { mutableStateOf(false) }
-    var showChooseLockTypeAlert by rememberSaveable { mutableStateOf(false) }
     var showSetPinAlert by rememberSaveable { mutableStateOf(false) }
-    var showSetPatternAlert by rememberSaveable { mutableStateOf(false) }
     var showRemovePinAlert by rememberSaveable { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
@@ -266,26 +264,24 @@ private fun DocumentDetailContent(
 
     val context = LocalContext.current
 
+    // The export options are only revealed when the Export button is tapped:
+    // the chosen format is stored while the user picks the destination folder.
     var pendingExportFormat by rememberSaveable { mutableStateOf<DocumentExportFormat?>(null) }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { folderUri ->
         val format = pendingExportFormat ?: return@rememberLauncherForActivityResult
+        pendingExportFormat = null
 
-        if (isGranted) {
-            onExportDocument(format)
-            pendingExportFormat = null
+        if (folderUri != null) {
+            onExportDocument(format, folderUri)
         }
     }
 
     fun requestExport(format: DocumentExportFormat) {
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-            pendingExportFormat = format
-            permissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        } else {
-            onExportDocument(format)
-        }
+        pendingExportFormat = format
+        folderPickerLauncher.launch(null)
     }
 
     LaunchedEffect(state.userMessage) {
@@ -316,10 +312,15 @@ private fun DocumentDetailContent(
                 title = state.documentModel?.title ?: "",
                 isFavorite = state.isFavorite,
                 onFavoriteClick = { onEvent(DocumentDetailEvent.OnFavoriteToggled) },
+                onExportDocument = { format ->
+                    onEvent(DocumentDetailEvent.OnUpdateEditingMode(false))
+                    focusManager.clearFocus()
+                    requestExport(format)
+                },
                 isLocked = state.isLocked,
                 onLockClick = {
                     if (state.isLocked) showRemovePinAlert = true
-                    else showChooseLockTypeAlert = true
+                    else showSetPinAlert = true
                 }
             )
         },
@@ -341,11 +342,6 @@ private fun DocumentDetailContent(
                         onEvent(DocumentDetailEvent.OnUpdateEditingMode(false))
                         focusManager.clearFocus()
                         showDeleteDocumentAlert = true
-                    },
-                    onExportDocument = { format ->
-                        onEvent(DocumentDetailEvent.OnUpdateEditingMode(false))
-                        focusManager.clearFocus()
-                        requestExport(format)
                     },
                     onShareDocument = {
                         onEvent(DocumentDetailEvent.OnUpdateEditingMode(false))
@@ -521,42 +517,18 @@ private fun DocumentDetailContent(
         )
     }
 
-    if (showChooseLockTypeAlert) {
-        ChooseDocumentLockTypeDialog(
-            onDismiss = { showChooseLockTypeAlert = false },
-            onLockTypeChosen = { type ->
-                showChooseLockTypeAlert = false
-                when (type) {
-                    DocumentLockType.PIN -> showSetPinAlert = true
-                    DocumentLockType.PATTERN -> showSetPatternAlert = true
-                }
-            }
-        )
-    }
-
     if (showSetPinAlert) {
         SetDocumentPinDialog(
             onDismiss = { showSetPinAlert = false },
             onConfirm = { pin ->
                 showSetPinAlert = false
-                onEvent(DocumentDetailEvent.OnLockDocument(pin, DocumentLockType.PIN))
-            }
-        )
-    }
-
-    if (showSetPatternAlert) {
-        SetDocumentPatternDialog(
-            onDismiss = { showSetPatternAlert = false },
-            onConfirm = { pattern ->
-                showSetPatternAlert = false
-                onEvent(DocumentDetailEvent.OnLockDocument(pattern, DocumentLockType.PATTERN))
+                onEvent(DocumentDetailEvent.OnLockDocument(pin))
             }
         )
     }
 
     if (showRemovePinAlert) {
         RemoveDocumentLockDialog(
-            lockType = state.lockType,
             onDismiss = { showRemovePinAlert = false },
             onConfirm = { secret ->
                 val removed = onRemoveDocumentLock(secret)
@@ -593,9 +565,12 @@ private fun ScreenTopAppBar(
     popBackStack: () -> Unit,
     isFavorite: Boolean = false,
     onFavoriteClick: () -> Unit = {},
+    onExportDocument: (DocumentExportFormat) -> Unit = {},
     isLocked: Boolean = false,
     onLockClick: () -> Unit = {}
 ) {
+    var exportMenuExpanded by rememberSaveable { mutableStateOf(false) }
+
     TopAppBar(
         modifier = modifier,
         title = {
@@ -621,6 +596,45 @@ private fun ScreenTopAppBar(
                         MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )
+            }
+
+            // Export is only exposed through this button: the format options
+            // are hidden until the popup menu is opened.
+            Box {
+                IconButton(onClick = { exportMenuExpanded = true }) {
+                    Icon(
+                        painter = painterResource(R.drawable.download_24px),
+                        contentDescription = stringResource(R.string.export),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = exportMenuExpanded,
+                    onDismissRequest = { exportMenuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.export_as_pdf)) },
+                        onClick = {
+                            exportMenuExpanded = false
+                            onExportDocument(DocumentExportFormat.PDF)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.export_as_jpg)) },
+                        onClick = {
+                            exportMenuExpanded = false
+                            onExportDocument(DocumentExportFormat.JPG)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.export_as_png)) },
+                        onClick = {
+                            exportMenuExpanded = false
+                            onExportDocument(DocumentExportFormat.PNG)
+                        }
+                    )
+                }
             }
 
             IconButton(onClick = onLockClick) {
@@ -1188,12 +1202,9 @@ private fun ToolBar(
     showEditDocument: Boolean,
     onRenameDocument: () -> Unit,
     onDeleteDocument: () -> Unit,
-    onExportDocument: (DocumentExportFormat) -> Unit,
     onShareDocument: () -> Unit,
     onEditDocument: () -> Unit
 ) {
-    var exportMenuExpanded by rememberSaveable { mutableStateOf(false) }
-
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1214,41 +1225,6 @@ private fun ToolBar(
                         painter = painterResource(R.drawable.delete_24px),
                         contentDescription = stringResource(R.string.delete_document)
                     )
-                }
-                Box {
-                    IconButton(onClick = { exportMenuExpanded = true }) {
-                        Icon(
-                            painter = painterResource(R.drawable.download_24px),
-                            contentDescription = stringResource(R.string.export_choice)
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = exportMenuExpanded,
-                        onDismissRequest = { exportMenuExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.export_as_pdf)) },
-                            onClick = {
-                                exportMenuExpanded = false
-                                onExportDocument(DocumentExportFormat.PDF)
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.export_as_jpg)) },
-                            onClick = {
-                                exportMenuExpanded = false
-                                onExportDocument(DocumentExportFormat.JPG)
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.export_as_png)) },
-                            onClick = {
-                                exportMenuExpanded = false
-                                onExportDocument(DocumentExportFormat.PNG)
-                            }
-                        )
-                    }
                 }
                 IconButton(onClick = onShareDocument) {
                     Icon(

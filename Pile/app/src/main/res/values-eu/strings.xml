@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Pile</string>
+    <string name="app_name">Doxora</string>
 
     <string name="your_piles">Zure pilak</string>
     <string name="all_documents">Dokumentu guztiak</string>
@@ -34,9 +34,9 @@
     <string name="discard">Baztertu</string>
 
 
-    <string name="new_pile">Pila berria</string>
-    <string name="add_pile">Gehitu pila</string>
-    <string name="pile_name">Pilaren izena</string>
+    <string name="new_pile">Hub berria</string>
+    <string name="add_pile">Gehitu huba</string>
+    <string name="pile_name">Hubaren izena</string>
     <string name="loading_new_document">Dokumentu berria kargatzen</string>
 
     <string name="add_document">Gehitu dokumentua</string>
@@ -68,7 +68,7 @@
     <string name="move_next">Mugitu hurrengora</string>
     <string name="detail_deleted">Xehetasuna ezabatuta</string>
     <string name="delete_detail">Ezabatu xehetasuna</string>
-    <string name="no_piles_saved">Oraindik ez duzu pilarik sortu. Sortu zure lehenengoa dokumentuak antolatzen hasteko!</string>
+    <string name="no_piles_saved">Oraindik ez duzu Hub-ik sortu. Sortu zure Hub dokumentuak antolatzen hasteko!</string>
     <string name="no_documents_in_pile">Pila hau hutsik dago, hasi dokumentu batzuk gehitzen!</string>
     <string name="no_documents_home">Oraindik ez duzu dokumenturik gehitu. Sakatu beheko botoia hasteko!</string>
     <string name="no_search_results">Ez da emaitzarik aurkitu zure bilaketarako. Saiatu iragazkiak edo kontsulta doitzen.</string>
@@ -130,7 +130,7 @@
     <string name="toggle_menu">Aldatu menua</string>
     <string name="close_menu">Itxi menua</string>
 
-    <string name="edit_pile">Editatu pila</string>
+    <string name="edit_pile">Editatu huba</string>
     <string name="delete_pile">Ezabatu pila</string>
     <string name="delete_pile_alert_title">Ezabatu pila?</string>
     <string name="delete_pile_alert_body">Dokumentuak mantendu egingo dira, baina pila hau kendu egingo zaie.</string>
@@ -164,7 +164,7 @@
     <string name="storage_saver_tittle">Memoria aurreztea</string>
     <string name="storage_saver_body">Gorde fitxategi gehigarriak kalitate pixka bat txikiagoan. Inportatutako PDFek jatorrizko kalitatea mantenduko dute</string>
 
-    <string name="onboarding_welcome_title">Ongi etorri Pile-ra</string>
+    <string name="onboarding_welcome_title">Ongi etorri Doxora-ra</string>
     <string name="onboarding_welcome_description">Dokumentu-kudeaketa zentralizatua, zure fitxategi pertsonalak errazago antolatzeko diseinatua.</string>
     <string name="onboarding_piles_title">Antolatu Piles-ekin</string>
     <string name="onboarding_piles_description">Piles izeneko etiketa bidezko sistema berezi batekin! Taldekatu zure dokumentuak zentzu handiena duen moduan.</string>

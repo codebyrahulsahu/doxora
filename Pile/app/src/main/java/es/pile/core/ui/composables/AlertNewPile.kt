@@ -81,7 +81,8 @@ internal fun AlertEditPilePreview() {
                     id = "1",
                     name = "Sample Piles",
                     iconId = "Bank",
-                    colorNumber = 1L
+                    colorNumber = 1L,
+                    position = 0
                 ),
                 onDismiss = {},
                 onConfirm = { _, _, _ -> }

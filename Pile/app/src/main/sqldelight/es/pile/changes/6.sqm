@@ -1,0 +1,2 @@
+-- Add manual hub ordering support (long press and drag on the home screen).
+ALTER TABLE PileModel ADD COLUMN position INTEGER NOT NULL DEFAULT 0;

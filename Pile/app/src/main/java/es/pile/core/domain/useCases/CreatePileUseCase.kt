@@ -24,7 +24,8 @@ class CreatePileUseCase(
             id = UUID.randomUUID().toString(),
             name = name,
             iconId = iconId,
-            colorNumber = color
+            colorNumber = color,
+            position = pileModelRepository.getAllPileModels().size.toLong()
         )
 
         pileModelRepository.insertPileModel(pileModel)

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Pile</string>
+    <string name="app_name">Doxora</string>
 
     <string name="your_piles">您的堆叠</string>
     <string name="all_documents">所有文档</string>
@@ -34,9 +34,9 @@
     <string name="discard">舍弃</string>
 
 
-    <string name="new_pile">新建堆叠</string>
-    <string name="add_pile">添加堆叠</string>
-    <string name="pile_name">堆叠名称</string>
+    <string name="new_pile">新建集线器</string>
+    <string name="add_pile">添加集线器</string>
+    <string name="pile_name">集线器名称</string>
     <string name="loading_new_document">正在加载新文档</string>
 
     <string name="add_document">添加文档</string>
@@ -68,7 +68,7 @@
     <string name="move_next">移至下一个</string>
     <string name="detail_deleted">详情已删除</string>
     <string name="delete_detail">删除详情</string>
-    <string name="no_piles_saved">您还没有创建过堆叠。创建第一个堆叠来开始整理您的文档吧！</string>
+    <string name="no_piles_saved">您还没有创建过集线器。创建您的集线器来开始整理您的文档吧！</string>
     <string name="no_documents_in_pile">此堆叠为空，开始添加文档吧！</string>
     <string name="no_documents_home">您还没有添加过文档。点击下方按钮开始！</string>
     <string name="no_search_results">未找到搜索结果。请尝试调整您的过滤器或查询语句。</string>
@@ -130,7 +130,7 @@
     <string name="toggle_menu">切换菜单</string>
     <string name="close_menu">关闭菜单</string>
 
-    <string name="edit_pile">编辑堆叠</string>
+    <string name="edit_pile">编辑集线器</string>
     <string name="delete_pile">删除堆叠</string>
     <string name="delete_pile_alert_title">删除堆叠？</string>
     <string name="delete_pile_alert_body">文档将保留，但此堆叠将从中移除。</string>
@@ -164,7 +164,7 @@
     <string name="storage_saver_tittle">节省存储空间</string>
     <string name="storage_saver_body">以略低的质量保存额外文件。导入的 PDF 将保持原始质量。</string>
 
-    <string name="onboarding_welcome_title">欢迎使用 Pile</string>
+    <string name="onboarding_welcome_title">欢迎使用 Doxora</string>
     <string name="onboarding_welcome_description">集中式文档管理，旨在让您的个人文件更易于整理。</string>
     <string name="onboarding_piles_title">使用 Piles 进行整理</string>
     <string name="onboarding_piles_description">采用独特的基于标签的系统，称为 Piles！以您认为合理的方式对文档进行分组。</string>

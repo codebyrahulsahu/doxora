@@ -6,6 +6,7 @@ import es.pile.core.domain.models.UserSettings
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.FavoritesRepository
+import es.pile.core.domain.repositories.PileModelRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.repositories.SettingsRepository
 import es.pile.core.domain.useCases.CreatePileUseCase
@@ -58,6 +59,7 @@ class HomeViewModelTest {
     private val settingsRepository: SettingsRepository = mockk(relaxed = true) {
         every { userSettings } returns flowOf(UserSettings())
     }
+    private val pileModelRepository: PileModelRepository = mockk(relaxed = true)
     private val moveDocumentToTrashUseCase: MoveDocumentToTrashUseCase = mockk(relaxed = true)
     private val getPdfUriUseCase: GetPdfUriUseCase = mockk(relaxed = true)
     private val exportDocumentUseCase: ExportDocumentUseCase = mockk(relaxed = true)
@@ -79,7 +81,7 @@ class HomeViewModelTest {
     fun `init should load home data`() = runTest {
         // Given
         val homeData = GetHomeDataUseCase.HomeData(
-            piles = listOf(PileModel("p1", "Pile 1", "icon1", 1)),
+            piles = listOf(PileModel("p1", "Pile 1", "icon1", 1, 0)),
             documents = listOf(mockk<DocumentModel>(relaxed = true) {
                 every { id } returns "d1"
             }),
@@ -103,6 +105,7 @@ class HomeViewModelTest {
             favoritesRepository,
             documentLockRepository,
             settingsRepository,
+            pileModelRepository,
             moveDocumentToTrashUseCase,
             getPdfUriUseCase,
             exportDocumentUseCase,

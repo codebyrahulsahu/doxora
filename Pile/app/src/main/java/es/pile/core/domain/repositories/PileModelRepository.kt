@@ -58,4 +58,13 @@ interface PileModelRepository {
      * @param id The unique identifier of the pile to delete.
      */
     suspend fun deletePileModel(id: String)
+
+    /**
+     * Persists the manual order of the piles (used by the long press and drag
+     * reordering on the home screen).
+     *
+     * @param orderedPileIds The pile ids ordered by their new position. The
+     * index of every id becomes its position.
+     */
+    suspend fun updatePilePositions(orderedPileIds: List<String>)
 }

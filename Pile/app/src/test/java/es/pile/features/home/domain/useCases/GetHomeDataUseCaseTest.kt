@@ -24,7 +24,7 @@ class GetHomeDataUseCaseTest {
     @Test
     fun `invoke should aggregate data correctly`() = runTest {
         // Given
-        val mockPiles = listOf(PileModel("p1", "Pile 1", "icon1", 1))
+        val mockPiles = listOf(PileModel("p1", "Pile 1", "icon1", 1, 0))
         val mockDocuments = listOf(
             mockk<DocumentModel> {
                 every { id } returns "d1"

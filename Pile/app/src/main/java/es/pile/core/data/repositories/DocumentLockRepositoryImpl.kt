@@ -3,7 +3,6 @@ package es.pile.core.data.repositories
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import es.pile.DatabaseQueries
-import es.pile.core.domain.models.DocumentLockType
 import es.pile.core.domain.repositories.DocumentLockRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -21,50 +20,44 @@ class DocumentLockRepositoryImpl(
         databaseQueries.selectAllDocumentLocks()
             .asFlow()
             .mapToList(ioDispatcher)
-            .map { locks -> locks.map { it.documentId }.toSet() }
+            .map { locks ->
+                // Pattern locks are no longer supported: clear any leftover row
+                // so the document is not left locked forever.
+                locks.filter { DocumentLockCodec.isPattern(it.pinHash) }
+                    .forEach { runCatching { databaseQueries.removeDocumentLock(it.documentId) } }
+
+                locks.filterNot { DocumentLockCodec.isPattern(it.pinHash) }
+                    .map { it.documentId }
+                    .toSet()
+            }
 
     override suspend fun isLocked(documentId: String): Boolean = withContext(ioDispatcher) {
         databaseQueries.selectDocumentLock(documentId).executeAsOneOrNull() != null
     }
-
-    override suspend fun getLockType(documentId: String): DocumentLockType =
-        withContext(ioDispatcher) {
-            val storedHash = databaseQueries.selectDocumentLock(documentId)
-                .executeAsOneOrNull()?.pinHash
-
-            DocumentLockCodec.decodeType(storedHash)
-        }
 
     override suspend fun verifySecret(documentId: String, secret: String): Boolean =
         withContext(ioDispatcher) {
             val lock = databaseQueries.selectDocumentLock(documentId)
                 .executeAsOneOrNull() ?: return@withContext false
 
-            val type = DocumentLockCodec.decodeType(lock.pinHash)
-
-            lock.pinHash == DocumentLockCodec.encode(type, hashSecret(documentId, secret))
+            lock.pinHash == DocumentLockCodec.encode(hashSecret(documentId, secret))
         }
 
-    override suspend fun lockDocument(
-        documentId: String,
-        secret: String,
-        type: DocumentLockType
-    ): Unit = withContext(ioDispatcher) {
-        databaseQueries.upsertDocumentLock(
-            documentId = documentId,
-            pinHash = DocumentLockCodec.encode(type, hashSecret(documentId, secret)),
-            createdAt = Instant.now().toString()
-        )
-    }
+    override suspend fun lockDocument(documentId: String, secret: String): Unit =
+        withContext(ioDispatcher) {
+            databaseQueries.upsertDocumentLock(
+                documentId = documentId,
+                pinHash = DocumentLockCodec.encode(hashSecret(documentId, secret)),
+                createdAt = Instant.now().toString()
+            )
+        }
 
     override suspend fun unlockDocument(documentId: String, secret: String): Boolean =
         withContext(ioDispatcher) {
             val lock = databaseQueries.selectDocumentLock(documentId)
                 .executeAsOneOrNull() ?: return@withContext false
 
-            val type = DocumentLockCodec.decodeType(lock.pinHash)
-
-            if (lock.pinHash != DocumentLockCodec.encode(type, hashSecret(documentId, secret))) {
+            if (lock.pinHash != DocumentLockCodec.encode(hashSecret(documentId, secret))) {
                 return@withContext false
             }
 
@@ -113,25 +106,19 @@ class DocumentLockRepositoryImpl(
 }
 
 /**
- * Encodes and decodes the kind of secret inside the value stored in the database
- * (`pinHash` column), so pattern locks work without a schema migration.
+ * Encodes the secret inside the value stored in the database (`pinHash` column).
  *
- * Stored format: `"pin:<hex>"`, `"pattern:<hex>"`. Rows written before pattern
- * locks existed have no prefix and are always treated as PIN locks. Local backups
- * round-trip the stored value untouched, so they keep working.
+ * Stored format: `"pin:<hex>"`. Rows written before the prefix existed are
+ * always treated as PIN locks, and pattern locks (no longer supported) are
+ * detected through [isPattern] so they can be cleared. Local backups round-trip
+ * the stored value untouched, so they keep working.
  */
 object DocumentLockCodec {
     private const val PIN_PREFIX = "pin:"
     private const val PATTERN_PREFIX = "pattern:"
 
-    fun encode(type: DocumentLockType, hash: String): String = when (type) {
-        DocumentLockType.PIN -> PIN_PREFIX + hash
-        DocumentLockType.PATTERN -> PATTERN_PREFIX + hash
-    }
+    fun encode(hash: String): String = PIN_PREFIX + hash
 
-    fun decodeType(stored: String?): DocumentLockType = when {
-        stored == null -> DocumentLockType.PIN
-        stored.startsWith(PATTERN_PREFIX) -> DocumentLockType.PATTERN
-        else -> DocumentLockType.PIN
-    }
+    /** True when [stored] is a legacy pattern lock that must be cleared. */
+    fun isPattern(stored: String?): Boolean = stored?.startsWith(PATTERN_PREFIX) == true
 }

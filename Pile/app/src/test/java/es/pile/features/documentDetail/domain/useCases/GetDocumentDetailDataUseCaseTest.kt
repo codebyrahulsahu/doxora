@@ -35,8 +35,8 @@ class GetDocumentDetailDataUseCaseTest {
             every { isIncomingPdf } returns true
             every { imageIds } returns emptyList()
         }
-        val mockPiles = listOf(PileModel("p1", "Pile 1", "icon1", 1))
-        val allPiles = listOf(PileModel("p1", "Pile 1", "icon1", 1), PileModel("p2", "Pile 2", "icon2", 2))
+        val mockPiles = listOf(PileModel("p1", "Pile 1", "icon1", 1, 0))
+        val allPiles = listOf(PileModel("p1", "Pile 1", "icon1", 1, 0), PileModel("p2", "Pile 2", "icon2", 2, 1))
 
         every { documentModelRepository.getDocumentModelById(docId) } returns flowOf(mockDocument)
         every { pileModelRepository.getPileModelsByIds(listOf("p1")) } returns flowOf(mockPiles)

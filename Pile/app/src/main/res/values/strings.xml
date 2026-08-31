@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Pile</string>
+    <string name="app_name">Doxora</string>
 
     <string name="your_piles">Your Piles</string>
     <string name="all_documents">All Documents</string>
@@ -59,9 +59,9 @@
     <string name="discard">Discard</string>
 
 
-    <string name="new_pile">New Pile</string>
-    <string name="add_pile">Add Pile</string>
-    <string name="pile_name">Pile Name</string>
+    <string name="new_pile">New Hub</string>
+    <string name="add_pile">Add Hub</string>
+    <string name="pile_name">Hub Name</string>
     <string name="loading_new_document">Loading new document</string>
 
     <string name="add_document">Add Document</string>
@@ -93,7 +93,7 @@
     <string name="move_next">Move next</string>
     <string name="detail_deleted">Detail deleted</string>
     <string name="delete_detail">Delete detail</string>
-    <string name="no_piles_saved">You haven\'t created any piles yet. Create your first one to start organizing your documents!</string>
+    <string name="no_piles_saved">You haven\'t created any hubs yet. Create your Hub to start organizing your documents!</string>
     <string name="no_documents_in_pile">This pile is empty, start by adding some documents to it!</string>
     <string name="no_documents_home">You haven\'t added any documents yet. Tap the button below to start!</string>
     <string name="no_search_results">No results were found for your search. Please try adjusting your filters or query.</string>
@@ -110,9 +110,8 @@
     <string name="exporting_document">Exporting document</string>
     <string name="pdf_exported_successfully">PDF exported successfully</string>
     <string name="export_as_pdf">Export as PDF</string>
-    <string name="export_as_jpg">Export as JPG image</string>
-    <string name="export_as_png">Export as PNG image</string>
-    <string name="export_choice">Export</string>
+    <string name="export_as_jpg">Export as JPG</string>
+    <string name="export_as_png">Export as PNG</string>
     <string name="images_exported_successfully">%1$d images exported successfully</string>
     <string name="error_exporting_images">Error exporting the images</string>
 
@@ -161,7 +160,7 @@
     <string name="toggle_menu">Toggle menu</string>
     <string name="close_menu">Close menu</string>
 
-    <string name="edit_pile">Edit Pile</string>
+    <string name="edit_pile">Edit Hub</string>
     <string name="delete_pile">Delete Pile</string>
     <string name="delete_pile_alert_title">Delete Pile?</string>
     <string name="delete_pile_alert_body">Documents will remain, but this pile will be removed from them.</string>
@@ -179,7 +178,7 @@
     <string name="user_account">User Account</string>
     <string name="profile_name">Name</string>
     <string name="profile_email">Email</string>
-    <string name="profile_name_default">Pile User</string>
+    <string name="profile_name_default">Doxora User</string>
     <string name="profile_email_default">you@example.com</string>
     <string name="edit_profile">Edit profile</string>
     <string name="profile_picture">Profile picture</string>
@@ -202,7 +201,7 @@
     <string name="backup_exported">Backup exported with %1$d documents</string>
     <string name="backup_restored">Backup restored with %1$d documents</string>
     <string name="error_exporting_backup">Error exporting the backup</string>
-    <string name="error_restoring_backup">That file is not a valid Pile backup</string>
+    <string name="error_restoring_backup">That file is not a valid Doxora backup</string>
 
     <string name="library">Library</string>
     <string name="favorites">Favorites</string>
@@ -238,30 +237,19 @@
     <string name="error_recognizing_text">Error recognizing the text</string>
     <string name="copy">Copy</string>
 
-    <!-- Per document PIN / pattern protection -->
+    <!-- Per document PIN protection -->
     <string name="protect_document">Protect document</string>
-    <string name="choose_lock_type">Choose lock type</string>
-    <string name="choose_lock_type_body">Protect this document with a PIN or with a pattern you draw with your finger.</string>
     <string name="pin_lock">PIN</string>
-    <string name="pattern_lock">Pattern</string>
     <string name="lock_document">Lock with PIN</string>
     <string name="set_pin_body">Choose a %1$d digit PIN for this document.</string>
     <string name="confirm_pin">Confirm your PIN</string>
     <string name="pins_do_not_match">The PINs don\'t match, try again</string>
-    <string name="lock_with_pattern">Lock with pattern</string>
-    <string name="set_pattern_body">Draw an unlock pattern connecting at least %1$d dots.</string>
-    <string name="confirm_pattern">Confirm your pattern</string>
-    <string name="confirm_pattern_body">Draw the same pattern again to confirm it.</string>
-    <string name="patterns_do_not_match">The patterns don\'t match, try again</string>
     <string name="remove_document_lock">Remove document lock</string>
     <string name="remove_document_lock_body">Type the current PIN to unlock this document.</string>
-    <string name="remove_document_pattern_body">Draw the current pattern to unlock this document.</string>
     <string name="locked_document_title">Locked document</string>
     <string name="locked_document_body">Type the PIN to open this document.</string>
-    <string name="locked_document_pattern_body">Draw the pattern to open this document.</string>
     <string name="document_locked">Locked</string>
     <string name="incorrect_pin">Incorrect PIN, try again</string>
-    <string name="incorrect_pattern">Incorrect pattern, try again</string>
 
     <string name="about_support">About &amp; Support</string>
     <string name="support_qr_description">Google Pay QR code</string>
@@ -269,15 +257,15 @@
     <string name="instagram">Instagram</string>
     <string name="github">GitHub</string>
     <string name="email">Email</string>
-    <string name="about_pile">About Pile</string>
-    <string name="about_pile_body">Pile is a privacy-first document manager. All your documents are stored locally on your device, and Piles help you organize them exactly how you like.</string>
+    <string name="about_pile">About Doxora</string>
+    <string name="about_pile_body">Doxora is a privacy-first document manager. All your documents are stored locally on your device, and Hubs help you organize them exactly how you like.</string>
     <string name="support_details">Instagram: %1$s
 GitHub: %2$s
 Email: %3$s</string>
     <string name="help_support">Help &amp; Support</string>
     <string name="help_support_body">Need a hand? Open an issue on the GitHub repository, or write us an email and we will get back to you.</string>
     <string name="privacy_policy">Privacy Policy</string>
-    <string name="privacy_policy_body">Pile stores all your documents and data locally on your device. We don\'t collect, upload or share your personal files with anyone.</string>
+    <string name="privacy_policy_body">Doxora stores all your documents and data locally on your device. We don\'t collect, upload or share your personal files with anyone.</string>
     <string name="app_version">Version %1$s</string>
 
     <string name="theme">Theme</string>
@@ -299,7 +287,7 @@ Email: %3$s</string>
     <string name="storage_saver_tittle">Storage saver</string>
     <string name="storage_saver_body">Save additional files at a slightly lower quality. Imported PDFs will retain their original quality</string>
 
-    <string name="onboarding_welcome_title">Welcome to Pile</string>
+    <string name="onboarding_welcome_title">Welcome to Doxora</string>
     <string name="onboarding_welcome_description">Centralized document management, designed to make your personal files easier to organize.</string>
     <string name="onboarding_piles_title">Organize with Piles</string>
     <string name="onboarding_piles_description">Featuring a unique tag-based system called Piles! Group your documents in a way that makes sense to you.</string>

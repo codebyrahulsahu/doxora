@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Pile</string>
+    <string name="app_name">Doxora</string>
 
     <string name="your_piles">Ваши стопки</string>
     <string name="all_documents">Все документы</string>
@@ -34,9 +34,9 @@
     <string name="discard">Отклонить</string>
 
 
-    <string name="new_pile">Новая стопка</string>
-    <string name="add_pile">Добавить стопку</string>
-    <string name="pile_name">Название стопки</string>
+    <string name="new_pile">Новый хаб</string>
+    <string name="add_pile">Добавить хаб</string>
+    <string name="pile_name">Название хаба</string>
     <string name="loading_new_document">Загрузка нового документа</string>
 
     <string name="add_document">Добавить документ</string>
@@ -68,7 +68,7 @@
     <string name="move_next">Переместить к следующему</string>
     <string name="detail_deleted">Деталь удалена</string>
     <string name="delete_detail">Удалить деталь</string>
-    <string name="no_piles_saved">Вы еще не создали ни одной стопки. Создайте свою первую стопку, чтобы начать организовывать документы!</string>
+    <string name="no_piles_saved">Вы еще не создали ни одного хаба. Создайте свой хаб, чтобы начать организовывать документы!</string>
     <string name="no_documents_in_pile">Эта стопка пуста, добавьте в нее документы!</string>
     <string name="no_documents_home">Вы еще не добавили ни одного документа. Нажмите кнопку ниже, чтобы начать!</string>
     <string name="no_search_results">По вашему запросу ничего не найдено. Попробуйте изменить фильтры или запрос.</string>
@@ -130,7 +130,7 @@
     <string name="toggle_menu">Переключить меню</string>
     <string name="close_menu">Закрыть меню</string>
 
-    <string name="edit_pile">Редактировать стопку</string>
+    <string name="edit_pile">Редактировать хаб</string>
     <string name="delete_pile">Удалить стопку</string>
     <string name="delete_pile_alert_title">Удалить стопку?</string>
     <string name="delete_pile_alert_body">Документы останутся, но эта стопка будет из них удалена.</string>
@@ -164,7 +164,7 @@
     <string name="storage_saver_tittle">Экономия памяти</string>
     <string name="storage_saver_body">Сохранять дополнительные файлы в чуть меньшем качестве. Импортированные PDF сохранят оригинальное качество.</string>
 
-    <string name="onboarding_welcome_title">Добро пожаловать в Pile</string>
+    <string name="onboarding_welcome_title">Добро пожаловать в Doxora</string>
     <string name="onboarding_welcome_description">Централизованное управление документами, созданное для того, чтобы ваши личные файлы было проще упорядочить.</string>
     <string name="onboarding_piles_title">Организуйте с помощью Piles</string>
     <string name="onboarding_piles_description">Уникальная система тегов под названием Piles! Группируйте документы так, как вам удобно.</string>

@@ -92,7 +92,8 @@ class LocalBackupRepositoryImpl(
                         id = it.id,
                         name = it.name,
                         iconId = it.iconId,
-                        colorNumber = it.colorNumber
+                        colorNumber = it.colorNumber,
+                        position = it.position.toInt()
                     )
                 },
                 documents = documents.map {
@@ -264,7 +265,8 @@ class LocalBackupRepositoryImpl(
                         pile.id,
                         pile.name,
                         pile.iconId,
-                        pile.colorNumber
+                        pile.colorNumber,
+                        pile.position.toLong()
                     )
                 }
 

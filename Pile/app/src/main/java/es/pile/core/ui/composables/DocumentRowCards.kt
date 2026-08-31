@@ -61,7 +61,7 @@ import java.util.Locale
  * @param documentSizes Map from document ID to size in bytes.
  * @param bitmapCache Bitmaps already loaded, indexed by cover cache key.
  * @param onLoadBitmap Called when a cover is not cached yet.
- * @param lockedDocumentIds Ids of the documents protected with a PIN or a pattern.
+ * @param lockedDocumentIds Ids of the documents protected with a PIN.
  * @param selectedDocumentIds Ids of the documents selected in multi selection mode.
  * @param onDocumentLongPress Called when a row is long pressed (enters the multi
  * selection mode). Null to disable the long press.
@@ -124,7 +124,7 @@ fun LazyListScope.itemDocumentsVerticalList(
  * @param documents Documents to display, already ordered by the caller.
  * @param bitmapCache Bitmaps already loaded, indexed by cover cache key.
  * @param onLoadBitmap Called when a cover is not cached yet.
- * @param lockedDocumentIds Ids of the documents protected with a PIN or a pattern.
+ * @param lockedDocumentIds Ids of the documents protected with a PIN.
  * @param selectedDocumentIds Ids of the documents selected in multi selection mode.
  * @param onDocumentLongPress Called when an item is long pressed (enters the multi
  * selection mode). Null to disable the long press.

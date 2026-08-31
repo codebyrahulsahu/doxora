@@ -1,4 +1,4 @@
-<p>Pile ist eine einfache und leistungsstarke Dokumentenverwaltungs-App, die Ihnen hilft, Ihre persönlichen Dateien an einem Ort zu organisieren, abzurufen und zu teilen.</p>
+<p>Doxora ist eine einfache und leistungsstarke Dokumentenverwaltungs-App, die Ihnen hilft, Ihre persönlichen Dateien an einem Ort zu organisieren, abzurufen und zu teilen.</p>
 
 <p>Aufgebaut um ein flexibles Tag-System namens „Piles“ (Stapel), ermöglicht Ihnen die App, Ihre Dokumente so zu kategorisieren, wie Sie denken, und nicht so, wie Ordner es Ihnen vorschreiben.</p>
 
@@ -14,7 +14,7 @@
 </ul>
 
 <h2>✦ ENTWICKELT FÜR DEN DATENSCHUTZ</h2>
-<p>Pile sammelt keine persönlichen Daten. Keine Analysen. Kein Tracking. Keine Cloud-Uploads. Alles bleibt auf Ihrem Gerät, unter Ihrer Kontrolle.</p>
+<p>Doxora sammelt keine persönlichen Daten. Keine Analysen. Kein Tracking. Keine Cloud-Uploads. Alles bleibt auf Ihrem Gerät, unter Ihrer Kontrolle.</p>
 
 <h2>✦ IDEAL FÜR</h2>
 <ul>
@@ -24,7 +24,7 @@
 </ul>
 
 <h2>✦ GEBAUT MIT MODERNER TECHNOLOGIE</h2>
-<p>Pile wurde mit den neuesten Android-Entwicklungsstandards wie Jetpack Compose und Material Design entwickelt, was eine reibungslose und zuverlässige Erfahrung gewährleistet.</p>
+<p>Doxora wurde mit den neuesten Android-Entwicklungsstandards wie Jetpack Compose und Material Design entwickelt, was eine reibungslose und zuverlässige Erfahrung gewährleistet.</p>
 
 <h2>✦ ROADMAP</h2>
 <p>Wir arbeiten aktiv an neuen Funktionen, darunter:</p>
@@ -39,4 +39,4 @@
 
 <hr>
 
-<p><strong>Pile &mdash; Deine Dokumente. Dein Weg. Dein Gerät.</strong></p>
+<p><strong>Doxora &mdash; Deine Dokumente. Dein Weg. Dein Gerät.</strong></p>

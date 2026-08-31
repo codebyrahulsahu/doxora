@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Pile</string>
+    <string name="app_name">Doxora</string>
 
     <string name="your_piles">As túas pilas</string>
     <string name="all_documents">Todos os documentos</string>
@@ -34,9 +34,9 @@
     <string name="discard">Desbotar</string>
 
 
-    <string name="new_pile">Nova pila</string>
-    <string name="add_pile">Engadir pila</string>
-    <string name="pile_name">Nome da pila</string>
+    <string name="new_pile">Novo Hub</string>
+    <string name="add_pile">Engadir Hub</string>
+    <string name="pile_name">Nome do Hub</string>
     <string name="loading_new_document">Cargando novo documento</string>
 
     <string name="add_document">Engadir documento</string>
@@ -68,7 +68,7 @@
     <string name="move_next">Mover ao seguinte</string>
     <string name="detail_deleted">Detalle eliminado</string>
     <string name="delete_detail">Eliminar detalle</string>
-    <string name="no_piles_saved">Aínda non creaches ningunha pila. Crea a primeira para comezar a organizar os teus documentos!</string>
+    <string name="no_piles_saved">Aínda non creaches ningún Hub. Crea o teu Hub para comezar a organizar os teus documentos!</string>
     <string name="no_documents_in_pile">Esta pila está baleira, empeza engadindo algúns documentos!</string>
     <string name="no_documents_home">Aínda non engadiches ningún documento. Preme o botón de abaixo para comezar!</string>
     <string name="no_search_results">Non se atoparon resultados para a túa busca. Tenta axustar os teus filtros ou consulta.</string>
@@ -130,7 +130,7 @@
     <string name="toggle_menu">Alternar menú</string>
     <string name="close_menu">Pechar menú</string>
 
-    <string name="edit_pile">Editar pila</string>
+    <string name="edit_pile">Editar Hub</string>
     <string name="delete_pile">Eliminar pila</string>
     <string name="delete_pile_alert_title">Eliminar pila?</string>
     <string name="delete_pile_alert_body">Os documentos manteranse, pero esta pila eliminarase deles.</string>
@@ -164,7 +164,7 @@
     <string name="storage_saver_tittle">Aforro de almacenamento</string>
     <string name="storage_saver_body">Garda ficheiros adicionais cunha calidade lixeiramente inferior. Os PDF importados manterán a súa calidade orixinal</string>
 
-    <string name="onboarding_welcome_title">Benvido a Pile</string>
+    <string name="onboarding_welcome_title">Benvido a Doxora</string>
     <string name="onboarding_welcome_description">Xestión centralizada de documentos, deseñada para que os teus ficheiros persoais sexan máis fáciles de organizar.</string>
     <string name="onboarding_piles_title">Organiza con Piles</string>
     <string name="onboarding_piles_description">Cun sistema único baseado en etiquetas chamado Piles! Agrupa os teus documentos da maneira que queiras.</string>

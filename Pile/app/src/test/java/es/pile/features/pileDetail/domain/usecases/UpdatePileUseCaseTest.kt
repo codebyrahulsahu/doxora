@@ -28,8 +28,11 @@ class UpdatePileUseCaseTest {
         val name = "Test Pile"
         val iconId = "icon_1"
         val color = 0xFF0000L
-        val expectedPileModel = PileModel(id, name, iconId, color)
+        val expectedPileModel = PileModel(id, name, iconId, color, 0)
         
+        coEvery { pileModelRepository.getAllPileModels() } returns listOf(
+            PileModel(id, name, iconId, color, 0)
+        )
         coEvery { pileModelRepository.updatePileModel(any()) } returns Unit
 
         // When

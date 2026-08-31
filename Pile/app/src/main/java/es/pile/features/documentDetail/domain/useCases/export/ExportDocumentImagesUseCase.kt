@@ -1,5 +1,6 @@
 package es.pile.features.documentDetail.domain.useCases.export
 
+import android.net.Uri
 import es.pile.DocumentModel
 import es.pile.core.domain.models.DocumentExportFormat
 import es.pile.core.domain.repositories.DocumentImageRepository
@@ -9,8 +10,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 /**
- * Exports every page/scan of a document as image files (JPG or PNG) into the
- * device's public Downloads directory.
+ * Exports every page/scan of a document as image files (JPG or PNG).
+ *
+ * When [destinationFolderUri] is provided the images are written into the
+ * folder chosen by the user; otherwise they are saved in the device's public
+ * Downloads directory.
  *
  * @return The number of images exported.
  */
@@ -19,7 +23,11 @@ class ExportDocumentImagesUseCase(
     private val fileRepository: FileRepository,
     private val documentImageRepository: DocumentImageRepository
 ) {
-    suspend operator fun invoke(document: DocumentModel, format: DocumentExportFormat): Int =
+    suspend operator fun invoke(
+        document: DocumentModel,
+        format: DocumentExportFormat,
+        destinationFolderUri: Uri? = null
+    ): Int =
         withContext(ioDispatcher) {
             require(format != DocumentExportFormat.PDF) {
                 "ExportDocumentImagesUseCase only supports image formats"
@@ -42,13 +50,25 @@ class ExportDocumentImagesUseCase(
 
             var exported = 0
             imageFiles.forEachIndexed { index, imageFile ->
-                fileRepository.exportFileToDownloads(
-                    file = imageFile,
-                    publicName = "${document.title}_page_${index + 1}_$imageLabel",
-                    mimeType = mimeType,
-                    extension = extension
-                ).getOrElse { error ->
-                    throw error
+                val publicName = "${document.title}_page_${index + 1}_$imageLabel"
+
+                if (destinationFolderUri != null) {
+                    fileRepository.exportFileToFolder(
+                        file = imageFile,
+                        folderUri = destinationFolderUri,
+                        publicName = publicName,
+                        mimeType = mimeType,
+                        extension = extension
+                    ).getOrElse { error -> throw error }
+                } else {
+                    fileRepository.exportFileToDownloads(
+                        file = imageFile,
+                        publicName = publicName,
+                        mimeType = mimeType,
+                        extension = extension
+                    ).getOrElse { error ->
+                        throw error
+                    }
                 }
                 exported++
             }

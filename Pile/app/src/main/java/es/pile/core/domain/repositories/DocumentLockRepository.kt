@@ -1,35 +1,26 @@
 package es.pile.core.domain.repositories
 
-import es.pile.core.domain.models.DocumentLockType
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Protects individual documents with a PIN or with a draw pattern.
+ * Protects individual documents with a PIN.
  *
- * Only a salted hash of the secret is stored, the plain PIN/pattern is never
- * persisted. The kind of secret is encoded together with the hash so the UI
- * can ask for the right input when unlocking.
+ * Only a salted hash of the secret is stored, the plain PIN is never
+ * persisted.
  */
 interface DocumentLockRepository {
 
     /** Stream with the ids of every document currently protected. */
     val lockedDocumentIds: Flow<Set<String>>
 
-    /** True when [documentId] is protected with a PIN or a pattern. */
+    /** True when [documentId] is protected with a PIN. */
     suspend fun isLocked(documentId: String): Boolean
 
-    /** Kind of secret protecting [documentId] ([DocumentLockType.PIN] when it is not locked). */
-    suspend fun getLockType(documentId: String): DocumentLockType
-
-    /** True when [secret] is the PIN/pattern protecting [documentId]. */
+    /** True when [secret] is the PIN protecting [documentId]. */
     suspend fun verifySecret(documentId: String, secret: String): Boolean
 
-    /** Protects [documentId] with [secret] (a PIN or a pattern depending on [type]). */
-    suspend fun lockDocument(
-        documentId: String,
-        secret: String,
-        type: DocumentLockType = DocumentLockType.PIN
-    )
+    /** Protects [documentId] with [secret]. */
+    suspend fun lockDocument(documentId: String, secret: String)
 
     /**
      * Removes the protection of [documentId] once [secret] has been checked.

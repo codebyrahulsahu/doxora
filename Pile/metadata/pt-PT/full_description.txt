@@ -1,4 +1,4 @@
-<p>Pile é uma aplicação de gestão de documentos simple e poderosa, concebida para o ajudar a organizar, aceder e partilhar os seus ficheiros pessoais — tudo num só lugar.</p>
+<p>Doxora é uma aplicação de gestão de documentos simple e poderosa, concebida para o ajudar a organizar, aceder e partilhar os seus ficheiros pessoais — tudo num só lugar.</p>
 
 <p>Construída em torno de um sistema flexível de etiquetas chamado "pilhas" (piles), a aplicação permite-lhe categorizar os seus documentos da forma como pensa, e não da forma como as pastas o obrigam.</p>
 
@@ -14,7 +14,7 @@
 </ul>
 
 <h2>✦ CONCEBIDO PARA A PRIVACIDADE</h2>
-<p>O Pile não recolhe quaisquer dados pessoais. Sem análises. Sem rastreio. Sem carregamentos para a nuvem. Tudo fica no seu dispositivo, sob o seu controlo.</p>
+<p>O Doxora não recolhe quaisquer dados pessoais. Sem análises. Sem rastreio. Sem carregamentos para a nuvem. Tudo fica no seu dispositivo, sob o seu controlo.</p>
 
 <h2>✦ IDEAL PARA</h2>
 <ul>
@@ -24,7 +24,7 @@
 </ul>
 
 <h2>✦ CONSTRUÍDO COM TECNOLOGIE MODERNA</h2>
-<p>O Pile é construído utilizando os mais recentes padrões de desenvolvimento Android, incluindo Jetpack Compose e Material Design, garantindo uma experiência fluida e fiável.</p>
+<p>O Doxora é construído utilizando os mais recentes padrões de desenvolvimento Android, incluindo Jetpack Compose e Material Design, garantindo uma experiência fluida e fiável.</p>
 
 <h2>✦ PLANO DE DESENVOLVIMENTO</h2>
 <p>Estamos a trabalhar ativamente em novas funcionalidades, incluindo:</p>
@@ -39,4 +39,4 @@
 
 <hr>
 
-<p><strong>Pile — Os seus documentos. À sua maneira. O seu dispositivo.</strong></p>
+<p><strong>Doxora — Os seus documentos. À sua maneira. O seu dispositivo.</strong></p>

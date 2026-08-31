@@ -16,7 +16,8 @@ data class PileBackup(
     val id: String,
     val name: String,
     val iconId: String,
-    val colorNumber: Long?
+    val colorNumber: Long?,
+    val position: Int = 0
 )
 
 @Serializable

@@ -73,6 +73,62 @@ class ExportDocumentImagesUseCaseTest {
     }
 
     @Test
+    fun `invoke should export every page as png into the folder chosen by the user`() = runTest {
+        // Given
+        val document = DocumentModel(
+            id = "doc1",
+            title = "Invoice",
+            imageIds = listOf("img1"),
+            creationDateTime = LocalDateTime.now(),
+            modificationDateTime = LocalDateTime.now(),
+            documentStatus = 1,
+            documentPileIds = emptyList(),
+            documentDetails = emptyList(),
+            documentNote = "",
+            documentOrganizationIds = emptyList(),
+            isIncomingPdf = false
+        )
+        val images = listOf(
+            DocumentImage(id = "img1", isDraft = false, crop = null, filter = 0, rotation = 0)
+        )
+        val folderUri = android.net.Uri.parse(
+            "content://com.android.externalstorage.documents/tree/primary%3ADocuments"
+        )
+        val exportedUri = android.net.Uri.parse(
+            "content://com.android.externalstorage.documents/tree/primary%3ADocuments/document/primary%3ADocuments%2FInvoice_page_1_PNG.png"
+        )
+
+        coEvery { documentImageRepository.getDocumentImageById("img1") } returns flowOf(images[0])
+        coEvery { fileRepository.createDocumentImages(document, images, true) } returns listOf(
+            File("/tmp/page_1.png")
+        )
+        coEvery {
+            fileRepository.exportFileToFolder(
+                any(),
+                folderUri,
+                "Invoice_page_1_PNG",
+                "image/png",
+                ".png"
+            )
+        } returns Result.success(exportedUri)
+
+        // When
+        val exported = exportDocumentImagesUseCase(document, DocumentExportFormat.PNG, folderUri)
+
+        // Then
+        assertEquals(1, exported)
+        coVerify(exactly = 1) {
+            fileRepository.exportFileToFolder(
+                any(),
+                folderUri,
+                "Invoice_page_1_PNG",
+                "image/png",
+                ".png"
+            )
+        }
+    }
+
+    @Test
     fun `invoke should reject the pdf format`() = runTest {
         // Given
         val document = DocumentModel(

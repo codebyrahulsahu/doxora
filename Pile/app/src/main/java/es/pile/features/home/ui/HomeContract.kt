@@ -43,6 +43,9 @@ sealed interface HomeEvent {
 
     data class OnCreatePile(val pileName: String, val iconId: String, val color: Long) : HomeEvent
 
+    /** Persists the new order of the hubs after a long press and drag. */
+    data class OnPilesReordered(val orderedPileIds: List<String>) : HomeEvent
+
     data class OnPdfImported(val uri: Uri) : HomeEvent
     data class OnImagesImported(val uris: List<Uri>) : HomeEvent
     data object OnCameraClick : HomeEvent

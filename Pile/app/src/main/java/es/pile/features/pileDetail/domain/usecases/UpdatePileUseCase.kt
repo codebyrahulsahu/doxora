@@ -27,7 +27,11 @@ class UpdatePileUseCase(
                 id = id,
                 name = name,
                 iconId = iconId,
-                colorNumber = color
+                colorNumber = color,
+                position = pileModelRepository.getAllPileModels()
+                    .indexOfFirst { it.id == id }
+                    .coerceAtLeast(0)
+                    .toLong()
             )
 
             pileModelRepository.updatePileModel(pileModel)

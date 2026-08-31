@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Pile</string>
+    <string name="app_name">Doxora</string>
 
     <string name="your_piles">Vos Piles</string>
     <string name="all_documents">Tous les documents</string>
@@ -34,9 +34,9 @@
     <string name="discard">Abandonner</string>
 
 
-    <string name="new_pile">Nouvelle Pile</string>
-    <string name="add_pile">Ajouter une Pile</string>
-    <string name="pile_name">Nom de la Pile</string>
+    <string name="new_pile">Nouveau Hub</string>
+    <string name="add_pile">Ajouter un Hub</string>
+    <string name="pile_name">Nom du Hub</string>
     <string name="loading_new_document">Chargement du nouveau document</string>
 
     <string name="add_document">Ajouter un document</string>
@@ -68,7 +68,7 @@
     <string name="move_next">Suivant</string>
     <string name="detail_deleted">Détail supprimé</string>
     <string name="delete_detail">Supprimer le détail</string>
-    <string name="no_piles_saved">Vous n\'avez pas encore créé de Pile. Créez votre première Pile pour commencer à organiser vos documents !</string>
+    <string name="no_piles_saved">Vous n\'avez pas encore créé de Hub. Créez votre Hub pour commencer à organiser vos documents !</string>
     <string name="no_documents_in_pile">Cette Pile est vide, commencez par y ajouter des documents !</string>
     <string name="no_documents_home">Vous n\'avez pas encore ajouté de document. Appuyez sur le bouton ci-dessous pour commencer !</string>
     <string name="no_search_results">Aucun résultat trouvé pour votre recherche. Veuillez ajuster vos filtres ou votre requête.</string>
@@ -130,7 +130,7 @@
     <string name="toggle_menu">Afficher/masquer le menu</string>
     <string name="close_menu">Fermer le menu</string>
 
-    <string name="edit_pile">Modifier la Pile</string>
+    <string name="edit_pile">Modifier le Hub</string>
     <string name="delete_pile">Supprimer la Pile</string>
     <string name="delete_pile_alert_title">Supprimer la Pile ?</string>
     <string name="delete_pile_alert_body">Les documents seront conservés, mais cette Pile en sera retirée.</string>
@@ -164,7 +164,7 @@
     <string name="storage_saver_tittle">Économiseur d\'espace</string>
     <string name="storage_saver_body">Enregistrer les fichiers avec une qualité légèrement inférieure. Les PDF importés conservent leur qualité d\'origine.</string>
 
-    <string name="onboarding_welcome_title">Bienvenue sur Pile</string>
+    <string name="onboarding_welcome_title">Bienvenue sur Doxora</string>
     <string name="onboarding_welcome_description">Gestion centralisée des documents, conçue pour faciliter l\'organisation de vos fichiers personnels.</string>
     <string name="onboarding_piles_title">Organisez avec Piles</string>
     <string name="onboarding_piles_description">Grâce à un système unique basé sur des tags appelé Piles ! Regroupez vos documents comme bon vous semble.</string>

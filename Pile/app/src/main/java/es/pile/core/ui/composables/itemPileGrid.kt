@@ -24,7 +24,8 @@ fun LazyListScope.itemPileGrid(
         id = "0",
         name = "",
         iconId = "",
-        colorNumber = null
+        colorNumber = null,
+        position = 0
     )
 
     val pilesAddPile = if (onNewPileClick == null) piles else piles + addPile
@@ -51,7 +52,8 @@ fun LazyListScope.itemPileGrid(
                         id = "0",
                         name = stringResource(R.string.new_pile),
                         iconId = "Add",
-                        colorNumber = null
+                        colorNumber = null,
+                        position = 0
                     ),
                     modifier = modifier.fillMaxHeight(),
                     onClick = { onNewPileClick?.invoke() },

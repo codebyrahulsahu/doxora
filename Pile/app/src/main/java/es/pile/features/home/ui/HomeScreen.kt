@@ -371,7 +371,10 @@ fun HomeScreen(
                             piles = state.pileModels,
                             pileDocumentCounts = state.pileDocumentCounts,
                             onPileClick = navigateToPileDetail,
-                            onNewPileClick = { isNewPileAlertExpanded = true }
+                            onNewPileClick = { isNewPileAlertExpanded = true },
+                            onPilesReordered = {
+                                viewModel.handleEvent(HomeEvent.OnPilesReordered(it))
+                            }
                         )
                     }
 

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Pile</string>
+    <string name="app_name">Doxora</string>
 
     <string name="your_piles">आपके ढेर</string>
     <string name="all_documents">सभी दस्तावेज़</string>
@@ -34,9 +34,9 @@
     <string name="discard">खारिज करें</string>
 
 
-    <string name="new_pile">नया ढेर</string>
-    <string name="add_pile">ढेर जोड़ें</string>
-    <string name="pile_name">ढेर का नाम</string>
+    <string name="new_pile">नया हब</string>
+    <string name="add_pile">हब जोड़ें</string>
+    <string name="pile_name">हब का नाम</string>
     <string name="loading_new_document">नया दस्तावेज़ लोड हो रहा है</string>
 
     <string name="add_document">दस्तावेज़ जोड़ें</string>
@@ -68,7 +68,7 @@
     <string name="move_next">अगला ले जाएं</string>
     <string name="detail_deleted">विवरण हटा दिया गया</string>
     <string name="delete_detail">विवरण हटाएं</string>
-    <string name="no_piles_saved">आपने अभी तक कोई ढेर नहीं बनाया है। अपने दस्तावेज़ों को व्यवस्थित करना शुरू करने के लिए अपना पहला ढेर बनाएं!</string>
+    <string name="no_piles_saved">आपने अभी तक कोई हब नहीं बनाया है। अपने दस्तावेज़ों को व्यवस्थित करना शुरू करने के लिए अपना हब बनाएं!</string>
     <string name="no_documents_in_pile">यह ढेर खाली है, इसमें दस्तावेज़ जोड़ना शुरू करें!</string>
     <string name="no_documents_home">आपने अभी तक कोई दस्तावेज़ नहीं जोड़ा है। शुरू करने के लिए नीचे दिए गए बटन पर टैप करें!</string>
     <string name="no_search_results">आपकी खोज के लिए कोई परिणाम नहीं मिले। कृपया अपने फ़िल्टर या क्वेरी को समायोजित करने का प्रयास करें।</string>
@@ -130,7 +130,7 @@
     <string name="toggle_menu">मेनू टॉगल करें</string>
     <string name="close_menu">मेनू बंद करें</string>
 
-    <string name="edit_pile">ढेर संपादित करें</string>
+    <string name="edit_pile">हब संपादित करें</string>
     <string name="delete_pile">ढेर हटाएं</string>
     <string name="delete_pile_alert_title">ढेर हटाएं?</string>
     <string name="delete_pile_alert_body">दस्तावेज़ बने रहेंगे, लेकिन यह ढेर उनसे हटा दिया जाएगा।</string>
@@ -164,7 +164,7 @@
     <string name="storage_saver_tittle">स्टोरेज सेवर</string>
     <string name="storage_saver_body">अतिरिक्त फ़ाइलों को थोड़े कम गुणवत्ता पर सहेजें। आयातित पीडीएफ अपनी मूल गुणवत्ता बनाए रखेंगे</string>
 
-    <string name="onboarding_welcome_title">Pile में आपका स्वागत है</string>
+    <string name="onboarding_welcome_title">Doxora में आपका स्वागत है</string>
     <string name="onboarding_welcome_description">केंद्रीकृत दस्तावेज़ प्रबंधन, आपकी व्यक्तिगत फ़ाइलों को व्यवस्थित करना आसान बनाने के लिए डिज़ाइन किया गया।</string>
     <string name="onboarding_piles_title">Piles के साथ व्यवस्थित करें</string>
     <string name="onboarding_piles_description">Piles नामक एक अद्वितीय टैग-आधारित सिस्टम की विशेषता! अपने दस्तावेज़ों को उस तरीके से समूहित करें जो आपके लिए समझ में आता है।</string>

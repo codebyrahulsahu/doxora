@@ -100,7 +100,8 @@ fun SelectPilesBottomSheet(
                         id = "0",
                         name = stringResource(R.string.new_pile),
                         iconId = "Add",
-                        colorNumber = null
+                        colorNumber = null,
+                        position = 0
                     ),
                     isColored = false,
                     onClick = { onNewPile() }
