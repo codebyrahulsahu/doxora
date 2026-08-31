@@ -17,7 +17,7 @@ class FavoritesRepositoryImpl(
     override val favoriteDocumentIds: Flow<List<String>> =
         databaseQueries.selectFavoriteDocumentIds().asFlow().mapToList(ioDispatcher).map { it }
 
-    override suspend fun setFavorite(documentId: String, favorite: Boolean) = withContext(ioDispatcher) {
+    override suspend fun setFavorite(documentId: String, favorite: Boolean): Unit = withContext(ioDispatcher) {
         if (favorite) databaseQueries.addFavoriteDocument(documentId, Instant.now().toString())
         else databaseQueries.removeFavoriteDocument(documentId)
     }
