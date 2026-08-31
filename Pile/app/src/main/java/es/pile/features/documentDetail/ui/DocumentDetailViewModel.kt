@@ -1,11 +1,11 @@
 package es.pile.features.documentDetail.ui
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.pile.R
 import es.pile.core.domain.models.DocumentDetail
 import es.pile.core.domain.models.DocumentExportFormat
-import es.pile.core.domain.models.DocumentLockType
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
@@ -106,12 +106,6 @@ class DocumentDetailViewModel(
         viewModelScope.launch {
             documentLockRepository.lockedDocumentIds.collect { ids ->
                 _state.update { it.copy(isLocked = documentId in ids) }
-
-                if (documentId in ids) {
-                    _state.update {
-                        it.copy(lockType = documentLockRepository.getLockType(documentId))
-                    }
-                }
             }
         }
     }
@@ -130,7 +124,10 @@ class DocumentDetailViewModel(
 
             DocumentDetailEvent.OnOpenDocument -> openPDF()
             DocumentDetailEvent.OnShare -> openShareSheet()
-            is DocumentDetailEvent.OnExportDocument -> exportDocument(event.format)
+            is DocumentDetailEvent.OnExportDocument -> exportDocument(
+                event.format,
+                event.destinationFolderUri
+            )
 
             DocumentDetailEvent.OnRecognizeText -> recognizeText()
             is DocumentDetailEvent.OnUpdateRecognizedText -> saveRecognizedText(event.newText)
@@ -140,14 +137,14 @@ class DocumentDetailViewModel(
                 favoritesRepository.setFavorite(documentId, !state.value.isFavorite)
             }
 
-            is DocumentDetailEvent.OnLockDocument -> lockDocument(event.secret, event.type)
+            is DocumentDetailEvent.OnLockDocument -> lockDocument(event.pin)
 
             DocumentDetailEvent.OnMessageDismissed -> _state.update { it.copy(userMessage = null) }
         }
     }
 
     /**
-     * Tries to unlock the document with [secret] (a PIN or a pattern).
+     * Tries to unlock the document with [secret] (the document PIN).
      *
      * @return true when the secret was correct and the document can be displayed.
      */
@@ -228,10 +225,10 @@ class DocumentDetailViewModel(
         }
     }
 
-    private fun lockDocument(secret: String, type: DocumentLockType) {
+    private fun lockDocument(pin: String) {
         viewModelScope.launch {
-            documentLockRepository.lockDocument(documentId, secret, type)
-            _state.update { it.copy(isUnlocked = true, lockType = type) }
+            documentLockRepository.lockDocument(documentId, pin)
+            _state.update { it.copy(isUnlocked = true) }
         }
     }
 
@@ -313,7 +310,10 @@ class DocumentDetailViewModel(
         }
     }
 
-    private fun exportDocument(format: DocumentExportFormat) {
+    private fun exportDocument(
+        format: DocumentExportFormat,
+        destinationFolderUri: Uri?
+    ) {
         viewModelScope.launch {
             val document = state.value.documentModel ?: return@launch
             try {
@@ -321,7 +321,7 @@ class DocumentDetailViewModel(
 
                 when (format) {
                     DocumentExportFormat.PDF -> {
-                        exportDocumentUseCase(document)
+                        exportDocumentUseCase(document, destinationFolderUri)
                         _state.update {
                             it.copy(
                                 userMessage = UiText.StringResource(R.string.pdf_exported_successfully)
@@ -331,7 +331,11 @@ class DocumentDetailViewModel(
 
                     DocumentExportFormat.JPG,
                     DocumentExportFormat.PNG -> {
-                        val imagesExported = exportDocumentImagesUseCase(document, format)
+                        val imagesExported = exportDocumentImagesUseCase(
+                            document,
+                            format,
+                            destinationFolderUri
+                        )
                         _state.update {
                             it.copy(
                                 userMessage = UiText.StringResource(

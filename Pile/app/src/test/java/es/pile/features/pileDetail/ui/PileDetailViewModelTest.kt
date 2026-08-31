@@ -58,7 +58,7 @@ class PileDetailViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         
-        every { pileModelRepository.getPileModelById(pileId) } returns flowOf(PileModel(pileId, "Pile", "icon", 0))
+        every { pileModelRepository.getPileModelById(pileId) } returns flowOf(PileModel(pileId, "Pile", "icon", 0, 0))
         every { documentModelRepository.documentModels } returns flowOf(emptyList())
         coEvery { getDocumentSizesUseCase(any()) } returns emptyMap()
     }

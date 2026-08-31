@@ -11,6 +11,7 @@ import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.repositories.FavoritesRepository
+import es.pile.core.domain.repositories.PileModelRepository
 import es.pile.core.domain.repositories.SettingsRepository
 import es.pile.core.domain.useCases.CreatePileUseCase
 import es.pile.core.domain.useCases.GetDocumentSizesUseCase
@@ -47,6 +48,7 @@ class HomeViewModel(
     private val favoritesRepository: FavoritesRepository,
     private val documentLockRepository: DocumentLockRepository,
     private val settingsRepository: SettingsRepository,
+    private val pileModelRepository: PileModelRepository,
     private val moveDocumentToTrashUseCase: MoveDocumentToTrashUseCase,
     private val getPdfUriUseCase: GetPdfUriUseCase,
     private val exportDocumentUseCase: ExportDocumentUseCase,
@@ -126,6 +128,8 @@ class HomeViewModel(
             HomeEvent.OnPurgeDraftDocument -> purgeDraftDocument()
 
             is HomeEvent.OnCreatePile -> addPile(event.pileName, event.iconId, event.color)
+
+            is HomeEvent.OnPilesReordered -> reorderPiles(event.orderedPileIds)
 
             is HomeEvent.OnPdfImported -> {
                 if (state.value.temporaryDocument != null) {
@@ -320,6 +324,16 @@ class HomeViewModel(
     private fun addPile(pileName: String, iconId: String, color: Long) {
         viewModelScope.launch {
             createPileUseCase(pileName, iconId, color)
+        }
+    }
+
+    /**
+     * Persists the manual order of the hubs after the user long pressed and
+     * dragged them on the home screen.
+     */
+    private fun reorderPiles(orderedPileIds: List<String>) {
+        viewModelScope.launch {
+            pileModelRepository.updatePilePositions(orderedPileIds)
         }
     }
 

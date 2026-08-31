@@ -38,7 +38,8 @@ class PileModelRepositoryImpl(
                 id = pileModel.id,
                 name = pileModel.name,
                 iconId = pileModel.iconId,
-                colorNumber = pileModel.colorNumber
+                colorNumber = pileModel.colorNumber,
+                position = pileModel.position
             )
         }
     }
@@ -57,6 +58,14 @@ class PileModelRepositoryImpl(
     override suspend fun deletePileModel(id: String) {
         withContext(ioDispatcher) {
             databaseQueries.removePileModel(id)
+        }
+    }
+
+    override suspend fun updatePilePositions(orderedPileIds: List<String>) {
+        withContext(ioDispatcher) {
+            orderedPileIds.forEachIndexed { index, pileId ->
+                databaseQueries.updatePileModelPosition(index.toLong(), pileId)
+            }
         }
     }
 }

@@ -19,6 +19,7 @@ class CreatePileUseCaseTest {
         val name = "New Pile"
         val iconId = "icon_id"
         val color = 0xFF0000L
+        coEvery { pileModelRepository.getAllPileModels() } returns emptyList()
         coEvery { pileModelRepository.insertPileModel(any()) } returns Unit
 
         // When

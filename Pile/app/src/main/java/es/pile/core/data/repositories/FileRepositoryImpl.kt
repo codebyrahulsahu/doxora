@@ -11,6 +11,7 @@ import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import androidx.core.content.FileProvider
@@ -310,6 +311,34 @@ class FileRepositoryImpl(
 
                 Uri.fromFile(destinationFile).toString()
             }
+        }
+    }
+
+    override suspend fun exportFileToFolder(
+        file: File,
+        folderUri: Uri,
+        publicName: String,
+        mimeType: String,
+        extension: String
+    ): Result<Uri> = withContext(ioDispatcher) {
+        runCatching {
+            val safeName = sanitizeFileName(publicName, extension)
+            val displayName = safeName.removeSuffix(extension)
+
+            val documentUri = DocumentsContract.createDocument(
+                contentResolver,
+                folderUri,
+                mimeType,
+                displayName
+            ) ?: throw IOException("The file could not be created in the selected folder")
+
+            contentResolver.openOutputStream(documentUri)?.use { outputStream ->
+                file.inputStream().use { inputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            } ?: throw IOException("The output stream for URI $documentUri could not be opened")
+
+            documentUri
         }
     }
 

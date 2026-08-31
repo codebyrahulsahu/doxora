@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Pile</string>
+    <string name="app_name">Doxora</string>
 
     <string name="your_piles">Les teves piles</string>
     <string name="all_documents">Tots els documents</string>
@@ -34,9 +34,9 @@
     <string name="discard">Descartar</string>
 
 
-    <string name="new_pile">Nova pila</string>
-    <string name="add_pile">Afegir pila</string>
-    <string name="pile_name">Nom de la pila</string>
+    <string name="new_pile">Nou Hub</string>
+    <string name="add_pile">Afegeix Hub</string>
+    <string name="pile_name">Nom del Hub</string>
     <string name="loading_new_document">S’està carregant el nou document</string>
 
     <string name="add_document">Afegir document</string>
@@ -68,7 +68,7 @@
     <string name="move_next">Moure al següent</string>
     <string name="detail_deleted">Detall eliminat</string>
     <string name="delete_detail">Eliminar detall</string>
-    <string name="no_piles_saved">Encara no has creat cap pila. Crea la teva primera per començar a organitzar els teus documents!</string>
+    <string name="no_piles_saved">Encara no has creat cap Hub. Crea el teu Hub per començar a organitzar els teus documents!</string>
     <string name="no_documents_in_pile">Aquesta pila està buida, comença afegint-hi alguns documents!</string>
     <string name="no_documents_home">Encara no has afegit cap document. Prem el botó de sota per començar!</string>
     <string name="no_search_results">No s’han trobat resultats per a la teva cerca. Prova d’ajustar els filtres o la consulta.</string>
@@ -130,7 +130,7 @@
     <string name="toggle_menu">Alternar menú</string>
     <string name="close_menu">Tancar menú</string>
 
-    <string name="edit_pile">Editar pila</string>
+    <string name="edit_pile">Editar Hub</string>
     <string name="delete_pile">Eliminar pila</string>
     <string name="delete_pile_alert_title">Vols eliminar la pila?</string>
     <string name="delete_pile_alert_body">Els documents es mantindran, però aquesta pila s’eliminarà d’ells.</string>
@@ -164,7 +164,7 @@
     <string name="storage_saver_tittle">Estalvi d’emmagatzematge</string>
     <string name="storage_saver_body">Desa fitxers addicionals amb una qualitat lleugerament inferior. Els PDF importats mantindran la seva qualitat original</string>
 
-    <string name="onboarding_welcome_title">Benvingut a Pile</string>
+    <string name="onboarding_welcome_title">Benvingut a Doxora</string>
     <string name="onboarding_welcome_description">Gestió centralitzada de documents, dissenyada per fer que els teus fitxers personals siguin més fàcils d’organitzar.</string>
     <string name="onboarding_piles_title">Organitza amb Piles</string>
     <string name="onboarding_piles_description">Amb un sistema únic basat en etiquetes anomenat Piles! Agrupa els teus documents de la manera que vulguis.</string>

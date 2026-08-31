@@ -44,7 +44,8 @@ fun PilePreview() {
             id = "1",
             name = "Documentos de Trabajo",
             iconId = "Bank",
-            colorNumber = 1L
+            colorNumber = 1L,
+            position = 0
         )
 
         Column(

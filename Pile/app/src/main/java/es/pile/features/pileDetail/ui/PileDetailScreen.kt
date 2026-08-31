@@ -133,7 +133,8 @@ private fun PileDetailPrev() {
                     id = "1",
                     name = "Sample Pile",
                     iconId = "Bank",
-                    colorNumber = 1L
+                    colorNumber = 1L,
+                    position = 0
                 ),
                 isLoading = false,
                 documentCoverItems = listOf(

@@ -1,4 +1,4 @@
-<p>Pile is a simple and powerful document management app designed to help you organize, access, and share your personal files &mdash; all in one place.</p>
+<p>Doxora is a simple and powerful document management app designed to help you organize, access, and share your personal files &mdash; all in one place.</p>
 
 <p>Built around a flexible tag system called "piles", the app lets you categorize your documents the way you think, not the way folders force you to.</p>
 
@@ -14,7 +14,7 @@
 </ul>
 
 <h2>✦ DESIGNED FOR PRIVACY</h2>
-<p>Pile does not collect any personal data. No analytics. No tracking. No cloud uploads. Everything stays on your device, under your control.</p>
+<p>Doxora does not collect any personal data. No analytics. No tracking. No cloud uploads. Everything stays on your device, under your control.</p>
 
 <h2>✦ PERFECT FOR</h2>
 <ul>
@@ -24,7 +24,7 @@
 </ul>
 
 <h2>✦ BUILT WITH MODERN TECHNOLOGY</h2>
-<p>Pile is built using the latest Android development standards, including Jetpack Compose and Material Design, ensuring a smooth and reliable experience.</p>
+<p>Doxora is built using the latest Android development standards, including Jetpack Compose and Material Design, ensuring a smooth and reliable experience.</p>
 
 <h2>✦ ROADMAP</h2>
 <p>We're actively working on new features, including:</p>
@@ -39,4 +39,4 @@
 
 <hr>
 
-<p><strong>Pile &mdash; Your documents. Your way. Your device.</strong></p>
+<p><strong>Doxora &mdash; Your documents. Your way. Your device.</strong></p>

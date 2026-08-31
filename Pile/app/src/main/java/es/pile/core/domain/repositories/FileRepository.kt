@@ -210,6 +210,26 @@ interface FileRepository {
     ): Result<String>
 
     /**
+     * Exports a file from internal storage into a folder chosen by the user
+     * through the system folder picker (Storage Access Framework).
+     *
+     * @param file The source [File] to be exported.
+     * @param folderUri The tree [Uri] of the destination folder chosen by the user.
+     * @param publicName The name the file will have in the destination folder.
+     * @param mimeType MIME type of the created file (default: PDF).
+     * @param extension File extension appended when missing (default: .pdf).
+     * @return A [Result] with the content [Uri] of the created file on success,
+     * or an exception on failure.
+     */
+    suspend fun exportFileToFolder(
+        file: File,
+        folderUri: Uri,
+        publicName: String,
+        mimeType: String = "application/pdf",
+        extension: String = ".pdf"
+    ): Result<Uri>
+
+    /**
      * Creates one image file per document page/scan in the cache folder, ready
      * to be exported to Downloads.
      *
