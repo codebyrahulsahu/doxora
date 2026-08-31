@@ -10,8 +10,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -27,6 +29,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,9 +39,13 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -52,7 +60,9 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.runtime.Composable
@@ -69,6 +79,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
@@ -88,13 +99,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.pile.R
 import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentSortOrder
+import es.pile.core.domain.models.DocumentViewMode
 import es.pile.core.ui.composables.AlertDraftDocumentWarning
 import es.pile.core.ui.composables.AlertNewPile
+import es.pile.core.ui.composables.DocumentViewToggle
 import es.pile.core.ui.composables.LoadingAlert
 import es.pile.core.ui.composables.LoadingWrapper
 import es.pile.core.ui.composables.DocumentSortMenu
 import es.pile.core.ui.composables.PileCardsRow
 import es.pile.core.ui.composables.SwipeBox
+import es.pile.core.ui.composables.itemDocumentsIconGrid
 import es.pile.core.ui.composables.itemDocumentsVerticalList
 import es.pile.core.ui.controllers.ImportActions
 import es.pile.core.ui.controllers.rememberDocumentImportController
@@ -153,6 +167,26 @@ fun HomeScreen(
     )
 
     var isSearchBarExpanded by rememberSaveable { mutableStateOf(false) }
+    var showDeleteSelectionAlert by rememberSaveable { mutableStateOf(false) }
+
+    // While documents are selected, tapping one toggles its selection instead of
+    // navigating to the document detail.
+    val onDocumentClicked: (String) -> Unit = { documentId ->
+        if (state.isSelectionMode) {
+            viewModel.handleEvent(HomeEvent.OnDocumentSelectionToggled(documentId))
+        } else {
+            navigateToDocumentDetail(documentId)
+        }
+    }
+
+    val onDocumentLongPressed: (String) -> Unit = { documentId ->
+        isSearchBarExpanded = false
+        viewModel.handleEvent(HomeEvent.OnDocumentLongPressed(documentId))
+    }
+
+    BackHandler(enabled = state.isSelectionMode) {
+        viewModel.handleEvent(HomeEvent.OnSelectionCleared)
+    }
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -180,7 +214,7 @@ fun HomeScreen(
         floatingActionButtonPosition = FabPosition.End,
         floatingActionButton = {
             AnimatedVisibility(
-                !isSearchBarExpanded,
+                !isSearchBarExpanded && !state.isSelectionMode,
                 enter = fadeIn(), exit = fadeOut()
             ) {
                 FabMenuWithController(
@@ -192,32 +226,43 @@ fun HomeScreen(
             }
         },
         topBar = {
-            val horizontalPaddingAnimated by animateDpAsState(
-                targetValue = if (isSearchBarExpanded) 0.dp else 16.dp,
-            )
-            val bottomPaddingAnimated by animateDpAsState(
-                targetValue = if (isSearchBarExpanded) 0.dp else 8.dp,
-            )
-            val displayCutoutStartPaddingAnimated by animateDpAsState(
-                targetValue = if (isSearchBarExpanded) 0.dp else WindowInsets.displayCutout.asPaddingValues()
-                    .calculateStartPadding(LocalLayoutDirection.current)
-            )
-            val displayCutoutEndPaddingAnimated by animateDpAsState(
-                targetValue = if (isSearchBarExpanded) 0.dp else WindowInsets.displayCutout.asPaddingValues()
-                    .calculateEndPadding(LocalLayoutDirection.current)
-            )
+            if (state.isSelectionMode) {
+                SelectionTopBar(
+                    selectedCount = state.selectedDocumentIds.size,
+                    enabled = !state.isSelectionWorking,
+                    onClose = { viewModel.handleEvent(HomeEvent.OnSelectionCleared) },
+                    onExport = { viewModel.handleEvent(HomeEvent.OnExportSelectedClicked) },
+                    onShare = { viewModel.handleEvent(HomeEvent.OnShareSelectedClicked) },
+                    onDelete = { showDeleteSelectionAlert = true }
+                )
+            } else {
+                val horizontalPaddingAnimated by animateDpAsState(
+                    targetValue = if (isSearchBarExpanded) 0.dp else 16.dp,
+                )
+                val bottomPaddingAnimated by animateDpAsState(
+                    targetValue = if (isSearchBarExpanded) 0.dp else 8.dp,
+                )
+                val displayCutoutStartPaddingAnimated by animateDpAsState(
+                    targetValue = if (isSearchBarExpanded) 0.dp else WindowInsets.displayCutout.asPaddingValues()
+                        .calculateStartPadding(LocalLayoutDirection.current)
+                )
+                val displayCutoutEndPaddingAnimated by animateDpAsState(
+                    targetValue = if (isSearchBarExpanded) 0.dp else WindowInsets.displayCutout.asPaddingValues()
+                        .calculateEndPadding(LocalLayoutDirection.current)
+                )
 
-            SearchContent(
-                modifier = Modifier
-                    .padding(horizontal = horizontalPaddingAnimated)
-                    .padding(bottom = bottomPaddingAnimated)
-                    .padding(start = displayCutoutStartPaddingAnimated)
-                    .padding(end = displayCutoutEndPaddingAnimated),
-                expanded = isSearchBarExpanded,
-                onExpandedChange = { isSearchBarExpanded = it },
-                onSettingsClick = navigateToSettings,
-                navigateToDocumentDetail = navigateToDocumentDetail
-            )
+                SearchContent(
+                    modifier = Modifier
+                        .padding(horizontal = horizontalPaddingAnimated)
+                        .padding(bottom = bottomPaddingAnimated)
+                        .padding(start = displayCutoutStartPaddingAnimated)
+                        .padding(end = displayCutoutEndPaddingAnimated),
+                    expanded = isSearchBarExpanded,
+                    onExpandedChange = { isSearchBarExpanded = it },
+                    onSettingsClick = navigateToSettings,
+                    navigateToDocumentDetail = navigateToDocumentDetail
+                )
+            }
         },
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState)
@@ -247,20 +292,27 @@ fun HomeScreen(
                         false
                     }
             ) {
-                LazyColumn(
+                BoxWithConstraints(
                     Modifier
-                        .padding(bottom = innerPadding.calculateBottomPadding())
+                        .fillMaxSize()
                         .background(MaterialTheme.colorScheme.surfaceContainer)
-                        .pointerInteropFilter {
-                            when (it.action) {
-                                MotionEvent.ACTION_DOWN -> {
-                                    fabMenuExpanded = false
-                                }
-                            }
-                            false
-                        },
-                    state = listState
                 ) {
+                    val availableWidth = maxWidth
+
+                    LazyColumn(
+                        Modifier
+                            .padding(bottom = innerPadding.calculateBottomPadding())
+                            .background(MaterialTheme.colorScheme.surfaceContainer)
+                            .pointerInteropFilter {
+                                when (it.action) {
+                                    MotionEvent.ACTION_DOWN -> {
+                                        fabMenuExpanded = false
+                                    }
+                                }
+                                false
+                            },
+                        state = listState
+                    ) {
                     item { Spacer(Modifier.height(8.dp)) }
 
                     item {
@@ -366,6 +418,17 @@ fun HomeScreen(
                                         )
                                     }
 
+                                    DocumentViewToggle(
+                                        viewMode = state.viewMode,
+                                        onViewModeChange = {
+                                            viewModel.handleEvent(
+                                                HomeEvent.OnViewModeChanged(it)
+                                            )
+                                        }
+                                    )
+
+                                    Spacer(Modifier.width(8.dp))
+
                                     DocumentSortMenu(
                                         sortOrder = state.sortOrder,
                                         onSortOrderChange = {
@@ -390,17 +453,43 @@ fun HomeScreen(
                             )
                         }
                     } else {
-                        itemDocumentsVerticalList(
-                            backgroundColor = backgroundDocuments,
-                            documents = sortedDocuments,
-                            documentSizes = state.documentSizes,
-                            bitmapCache = bitmapCache,
-                            onLoadBitmap = { viewModel.handleEvent(HomeEvent.OnImageDisplayed(it)) },
-                            lockedDocumentIds = state.lockedDocumentIds,
-                            onDocumentClick = navigateToDocumentDetail,
-                            favoriteDocumentIds = state.favoriteDocumentIds,
-                            onFavoriteToggle = { viewModel.handleEvent(HomeEvent.OnFavoriteToggled(it)) }
-                        )
+                        when (state.viewMode) {
+                            DocumentViewMode.LIST -> itemDocumentsVerticalList(
+                                backgroundColor = backgroundDocuments,
+                                documents = sortedDocuments,
+                                documentSizes = state.documentSizes,
+                                bitmapCache = bitmapCache,
+                                onLoadBitmap = {
+                                    viewModel.handleEvent(HomeEvent.OnImageDisplayed(it))
+                                },
+                                lockedDocumentIds = state.lockedDocumentIds,
+                                selectedDocumentIds = state.selectedDocumentIds,
+                                onDocumentClick = onDocumentClicked,
+                                onDocumentLongPress = onDocumentLongPressed,
+                                favoriteDocumentIds = state.favoriteDocumentIds,
+                                onFavoriteToggle = {
+                                    viewModel.handleEvent(HomeEvent.OnFavoriteToggled(it))
+                                }
+                            )
+
+                            DocumentViewMode.GRID -> itemDocumentsIconGrid(
+                                availableWidth = availableWidth,
+                                backgroundColor = backgroundDocuments,
+                                documents = sortedDocuments,
+                                bitmapCache = bitmapCache,
+                                onLoadBitmap = {
+                                    viewModel.handleEvent(HomeEvent.OnImageDisplayed(it))
+                                },
+                                lockedDocumentIds = state.lockedDocumentIds,
+                                selectedDocumentIds = state.selectedDocumentIds,
+                                onDocumentClick = onDocumentClicked,
+                                onDocumentLongPress = onDocumentLongPressed,
+                                favoriteDocumentIds = state.favoriteDocumentIds,
+                                onFavoriteToggle = {
+                                    viewModel.handleEvent(HomeEvent.OnFavoriteToggled(it))
+                                }
+                            )
+                        }
                     }
 
                     item {
@@ -411,9 +500,45 @@ fun HomeScreen(
                                 .background(backgroundDocuments)
                         )
                     }
+                    }
                 }
             }
         }
+    }
+
+    if (state.isSelectionWorking) {
+        LoadingAlert(stringResource(R.string.preparing_documents))
+    }
+
+    if (showDeleteSelectionAlert) {
+        AlertDialog(
+            onDismissRequest = { showDeleteSelectionAlert = false },
+            title = {
+                Text(
+                    stringResource(
+                        R.string.delete_documents_alert_title,
+                        state.selectedDocumentIds.size
+                    )
+                )
+            },
+            text = { Text(stringResource(R.string.delete_documents_alert_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteSelectionAlert = false
+                    viewModel.handleEvent(HomeEvent.OnDeleteSelectedClicked)
+                }) {
+                    Text(
+                        stringResource(R.string.delete),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteSelectionAlert = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 
     if (isNewPileAlertExpanded) {
@@ -615,3 +740,118 @@ private fun UnsavedDocumentCard(
     }
 }
 
+/**
+ * Top bar shown while the multi selection mode is active: it replaces the search
+ * bar and reveals the actions (Export, Share and Delete) for every selected
+ * document.
+ */
+@Composable
+private fun SelectionTopBar(
+    selectedCount: Int,
+    enabled: Boolean,
+    onClose: () -> Unit,
+    onExport: () -> Unit,
+    onShare: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.primaryContainer
+    ) {
+        Column(
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(horizontal = 8.dp)
+                .padding(top = 4.dp, bottom = 12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onClose, enabled = enabled) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.close_menu)
+                    )
+                }
+
+                Text(
+                    text = stringResource(R.string.documents_selected, selectedCount),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SelectionActionButton(
+                    icon = Icons.Filled.FileDownload,
+                    label = stringResource(R.string.export),
+                    onClick = onExport,
+                    enabled = enabled,
+                    modifier = Modifier.weight(1f)
+                )
+
+                SelectionActionButton(
+                    icon = Icons.Filled.Share,
+                    label = stringResource(R.string.share),
+                    onClick = onShare,
+                    enabled = enabled,
+                    modifier = Modifier.weight(1f)
+                )
+
+                SelectionActionButton(
+                    icon = Icons.Filled.Delete,
+                    label = stringResource(R.string.delete),
+                    onClick = onDelete,
+                    enabled = enabled,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SelectionActionButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    tint: Color = MaterialTheme.colorScheme.primary,
+    modifier: Modifier = Modifier
+) {
+    val contentAlpha = if (enabled) 1f else 0.38f
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tint.copy(alpha = contentAlpha),
+                modifier = Modifier.size(18.dp)
+            )
+
+            Spacer(Modifier.width(6.dp))
+
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha)
+            )
+        }
+    }
+}

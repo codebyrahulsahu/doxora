@@ -1,6 +1,7 @@
 package es.pile.core.domain.repositories
 
 import es.pile.core.domain.models.AppTheme
+import es.pile.core.domain.models.DocumentViewMode
 import es.pile.core.domain.models.ImageResolution
 import es.pile.core.domain.models.UserSettings
 import kotlinx.coroutines.flow.Flow
@@ -73,4 +74,19 @@ interface SettingsRepository {
      * @param email The new profile email.
      */
     suspend fun updateProfileEmail(email: String)
+
+    /**
+     * Updates the layout used to display the documents in the main screen.
+     *
+     * @param viewMode The new [DocumentViewMode] (list or icon grid).
+     */
+    suspend fun updateDocumentViewMode(viewMode: DocumentViewMode)
+
+    /**
+     * Updates the profile picture.
+     *
+     * @param path File name of the stored picture inside the app's internal
+     * storage, or null to remove the current picture.
+     */
+    suspend fun updateProfilePicturePath(path: String?)
 }

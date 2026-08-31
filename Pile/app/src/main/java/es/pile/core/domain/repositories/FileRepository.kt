@@ -242,4 +242,23 @@ interface FileRepository {
      * @return The rotation degrees (0, 90, 180, or 270).
      */
     suspend fun getExifRotation(uri: Uri): Int
+
+    /**
+     * Copies an image picked from the gallery into the app's internal storage to be
+     * used as the profile picture. The image is downscaled and rotated according to
+     * its EXIF data.
+     *
+     * @param uri The gallery image URI.
+     * @param previousFileName File name of the current profile picture to delete, if any.
+     * @return The file name of the stored picture, to be persisted in the settings.
+     */
+    suspend fun saveProfilePicture(uri: Uri, previousFileName: String? = null): String
+
+    /**
+     * Returns the internal [File] of a stored profile picture.
+     *
+     * @param fileName The file name returned by [saveProfilePicture].
+     * @return A [File] pointing to the stored picture (may not exist).
+     */
+    fun getProfilePictureFile(fileName: String): File
 }

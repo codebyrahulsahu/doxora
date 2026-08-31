@@ -172,6 +172,20 @@ class LocalBackupRepositoryImpl(
                         file.inputStream().use { input -> input.copyTo(zip) }
                         zip.closeEntry()
                     }
+
+                    // The profile picture travels inside the backup too; its file
+                    // name is already stored in the settings JSON of the manifest
+                    settings.profilePicturePath?.let { path ->
+                        val pictureFile = fileRepository.getProfilePictureFile(path)
+
+                        if (pictureFile.exists()) {
+                            zip.putNextEntry(
+                                ZipEntry("$BACKUP_FILES_FOLDER/profile_pictures/${pictureFile.name}")
+                            )
+                            pictureFile.inputStream().use { input -> input.copyTo(zip) }
+                            zip.closeEntry()
+                        }
+                    }
                 }
 
                 val outputStream = contentResolver.openOutputStream(uri)

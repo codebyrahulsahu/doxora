@@ -4,6 +4,7 @@ import es.pile.DocumentModel
 import es.pile.PileModel
 import es.pile.core.domain.models.DocumentDetail
 import es.pile.core.domain.models.DocumentExportFormat
+import es.pile.core.domain.models.DocumentLockType
 import es.pile.core.ui.util.UiText
 
 
@@ -21,6 +22,7 @@ data class DocumentDetailState(
     val isFavorite: Boolean = false,
     val isLocked: Boolean = false,
     val isUnlocked: Boolean = false,
+    val lockType: DocumentLockType = DocumentLockType.PIN,
     val userMessage: UiText? = null
 )
 
@@ -46,9 +48,9 @@ sealed interface DocumentDetailEvent {
     data class OnUpdateRecognizedText(val newText: String) : DocumentDetailEvent
     data object OnDeleteRecognizedText : DocumentDetailEvent
 
-    // Favorites and per document PIN protection
+    // Favorites and per document PIN / pattern protection
     data object OnFavoriteToggled : DocumentDetailEvent
-    data class OnLockDocument(val pin: String) : DocumentDetailEvent
+    data class OnLockDocument(val secret: String, val type: DocumentLockType) : DocumentDetailEvent
 
     data object OnMessageDismissed : DocumentDetailEvent
 }

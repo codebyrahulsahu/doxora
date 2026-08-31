@@ -378,9 +378,61 @@ class FileRepositoryImpl(
     override suspend fun getExifRotation(file: File): Int =
         imageTransformationHelper.getExifRotation(file)
 
-
     override suspend fun getExifRotation(uri: Uri): Int =
         imageTransformationHelper.getExifRotation(uri)
+
+    override suspend fun saveProfilePicture(
+        uri: Uri,
+        previousFileName: String?
+    ): String = withContext(ioDispatcher) {
+        val folder = File(appDirectory, PROFILE_PICTURE_FOLDER).apply { mkdirs() }
+
+        val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: throw IOException("The selected image could not be read")
+
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            throw IOException("The selected file is not a valid image")
+        }
+
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = imageTransformationHelper.calculateInSampleSize(
+                bounds,
+                PROFILE_PICTURE_MAX_SIZE
+            )
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+            ?: throw IOException("The selected image could not be decoded")
+
+        val rotation = imageTransformationHelper.getExifRotation(uri)
+
+        val orientedBitmap = if (rotation != 0) {
+            val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        } else {
+            bitmap
+        }
+
+        val destination = File(folder, "profile_${System.currentTimeMillis()}.jpg")
+        destination.outputStream().use { output ->
+            orientedBitmap.compress(Bitmap.CompressFormat.JPEG, PROFILE_PICTURE_QUALITY, output)
+        }
+
+        // Remove the replaced picture so internal storage does not fill up with orphans
+        if (previousFileName != null && previousFileName != destination.name) {
+            File(folder, previousFileName).delete()
+        }
+
+        destination.name
+    }
+
+    override fun getProfilePictureFile(fileName: String): File =
+        File(File(appDirectory, PROFILE_PICTURE_FOLDER), fileName)
+
 
     /**
      * Helper function to save an image from a URI with resizing and rotating based on EXIF data.
@@ -515,5 +567,14 @@ class FileRepositoryImpl(
 
         /** Quality used when exporting JPG images. */
         const val IMAGE_EXPORT_QUALITY = 90
+
+        /** Folder inside internal storage holding the profile pictures. */
+        const val PROFILE_PICTURE_FOLDER = "profile_pictures"
+
+        /** Max side in pixels of a stored profile picture. */
+        const val PROFILE_PICTURE_MAX_SIZE = 512
+
+        /** JPEG quality of a stored profile picture. */
+        const val PROFILE_PICTURE_QUALITY = 90
     }
 }

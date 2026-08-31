@@ -7,22 +7,27 @@ import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.S
 import android.os.Build.VERSION_CODES.TIRAMISU
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -63,6 +68,8 @@ import es.pile.core.ui.composables.LoadingAlert
 import es.pile.core.ui.composables.LoadingWrapper
 import es.pile.core.ui.theme.PileTheme
 import es.pile.features.settings.ui.composables.ItemPosition
+import es.pile.features.settings.ui.composables.ProfilePictureAvatar
+import es.pile.features.settings.ui.composables.ProfilePictureEditBadge
 import es.pile.features.settings.ui.composables.SettingsItem
 import es.pile.features.settings.ui.composables.SettingsRadioButton
 import es.pile.features.settings.ui.composables.SettingsSection
@@ -71,6 +78,7 @@ import es.pile.features.settings.ui.composables.SUPPORT_EMAIL
 import es.pile.features.settings.ui.composables.SUPPORT_GITHUB
 import es.pile.features.settings.ui.composables.SUPPORT_INSTAGRAM
 import es.pile.features.settings.ui.composables.SupportContactsCard
+import java.io.File
 import org.koin.androidx.compose.koinViewModel
 
 /** MIME type used when the user picks where the local backup file is written. */
@@ -104,12 +112,25 @@ fun SettingsOverviewScreen(
         showRestoreWarning = true
     }
 
+    val profilePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let { viewModel.handleEvent(SettingsOverviewEvent.OnProfilePicturePicked(it)) }
+    }
+
+    val launchProfilePicturePicker = {
+        profilePictureLauncher.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        )
+    }
+
     val context = LocalContext.current
 
     SettingsOverviewContent(
         state = state,
         navigateToFavorites = navigateToFavorites,
         navigateToRecycleBin = navigateToRecycleBin,
+        onChooseProfilePictureFromGallery = launchProfilePicturePicker,
         onExportBackup = {
             exportBackupLauncher.launch("pile-backup-${System.currentTimeMillis()}.zip")
         },
@@ -197,6 +218,7 @@ fun SettingsOverviewContent(
     onEvent: (SettingsOverviewEvent) -> Unit,
     navigateToFavorites: () -> Unit = {},
     navigateToRecycleBin: () -> Unit = {},
+    onChooseProfilePictureFromGallery: () -> Unit = {},
     onExportBackup: () -> Unit = {},
     onImportBackup: () -> Unit = {},
     onOpenUrl: (String) -> Unit = {},
@@ -207,6 +229,7 @@ fun SettingsOverviewContent(
 
     var showAppThemeDialog by rememberSaveable { mutableStateOf(false) }
     var showEditProfileDialog by rememberSaveable { mutableStateOf(false) }
+    var showProfilePictureOptions by rememberSaveable { mutableStateOf(false) }
     var supportDialog by remember { mutableStateOf(SupportDialog.NONE) }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -216,6 +239,13 @@ fun SettingsOverviewContent(
         state.backupMessage?.let { uiText ->
             snackbarHostState.showSnackbar(message = uiText.asString(context))
             onEvent(SettingsOverviewEvent.OnBackupMessageDismissed)
+        }
+    }
+
+    LaunchedEffect(state.profilePictureMessage) {
+        state.profilePictureMessage?.let { uiText ->
+            snackbarHostState.showSnackbar(message = uiText.asString(context))
+            onEvent(SettingsOverviewEvent.OnProfilePictureMessageDismissed)
         }
     }
 
@@ -243,6 +273,8 @@ fun SettingsOverviewContent(
                 UserAccountSection(
                     profileName = state.profileName,
                     profileEmail = state.profileEmail,
+                    profilePictureFile = state.profilePictureFile,
+                    onChangeProfilePicture = { showProfilePictureOptions = true },
                     onEditProfile = { showEditProfileDialog = true }
                 )
 
@@ -280,8 +312,27 @@ fun SettingsOverviewContent(
         }
     }
 
+    if (state.isWorkingOnProfilePicture) {
+        LoadingAlert(title = stringResource(R.string.saving_profile_picture))
+    }
+
     if (state.isWorkingOnBackup) {
         LoadingAlert(title = stringResource(R.string.working_on_backup))
+    }
+
+    if (showProfilePictureOptions) {
+        ProfilePictureOptionsDialog(
+            hasPicture = state.profilePictureFile != null,
+            onDismiss = { showProfilePictureOptions = false },
+            onChooseFromGallery = {
+                showProfilePictureOptions = false
+                onChooseProfilePictureFromGallery()
+            },
+            onRemove = {
+                showProfilePictureOptions = false
+                onEvent(SettingsOverviewEvent.OnProfilePictureRemoved)
+            }
+        )
     }
 
     if (showAppThemeDialog) {
@@ -301,6 +352,8 @@ fun SettingsOverviewContent(
         EditProfileDialog(
             initialName = state.profileName.orEmpty(),
             initialEmail = state.profileEmail.orEmpty(),
+            profilePictureFile = state.profilePictureFile,
+            onChooseFromGallery = onChooseProfilePictureFromGallery,
             onDismiss = { showEditProfileDialog = false },
             onConfirm = { name, email ->
                 onEvent(SettingsOverviewEvent.OnProfileUpdated(name, email))
@@ -322,6 +375,8 @@ private fun UserAccountSection(
     modifier: Modifier = Modifier,
     profileName: String?,
     profileEmail: String?,
+    profilePictureFile: File? = null,
+    onChangeProfilePicture: () -> Unit = {},
     onEditProfile: () -> Unit
 ) {
     SettingsSection(modifier = modifier, title = stringResource(R.string.user_account)) {
@@ -337,19 +392,13 @@ private fun UserAccountSection(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.person_24px),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(30.dp)
+                Box(contentAlignment = Alignment.BottomEnd) {
+                    ProfilePictureAvatar(
+                        profilePictureFile = profilePictureFile,
+                        onClick = onChangeProfilePicture
                     )
+
+                    ProfilePictureEditBadge()
                 }
 
                 Column(Modifier.weight(1f)) {
@@ -364,6 +413,13 @@ private fun UserAccountSection(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+
+                    Text(
+                        text = stringResource(R.string.change_profile_picture_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
                 }
 
                 TextButton(onClick = onEditProfile) {
@@ -372,6 +428,58 @@ private fun UserAccountSection(
             }
         }
     }
+}
+
+/**
+ * Options shown when setting or updating the profile picture.
+ */
+@Composable
+private fun ProfilePictureOptionsDialog(
+    hasPicture: Boolean,
+    onDismiss: () -> Unit,
+    onChooseFromGallery: () -> Unit,
+    onRemove: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.profile_picture)) },
+        text = {
+            Column {
+                SettingsItem(
+                    itemPosition = if (hasPicture) ItemPosition.TOP else ItemPosition.SINGLE,
+                    title = stringResource(R.string.choose_from_gallery),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.PhotoLibrary,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    onAction = onChooseFromGallery
+                )
+
+                if (hasPicture) {
+                    SettingsItem(
+                        itemPosition = ItemPosition.BOTTOM,
+                        title = stringResource(R.string.remove_photo),
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        },
+                        onAction = onRemove
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 @Composable
@@ -565,7 +673,9 @@ private fun EditProfileDialog(
     initialName: String,
     initialEmail: String,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, email: String) -> Unit
+    onConfirm: (name: String, email: String) -> Unit,
+    profilePictureFile: File? = null,
+    onChooseFromGallery: () -> Unit = {}
 ) {
     var name by rememberSaveable { mutableStateOf(initialName) }
     var email by rememberSaveable { mutableStateOf(initialEmail) }
@@ -575,6 +685,29 @@ private fun EditProfileDialog(
         title = { Text(stringResource(R.string.edit_profile)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Box(contentAlignment = Alignment.BottomEnd) {
+                        ProfilePictureAvatar(
+                            profilePictureFile = profilePictureFile,
+                            onClick = onChooseFromGallery
+                        )
+
+                        ProfilePictureEditBadge()
+                    }
+
+                    TextButton(onClick = onChooseFromGallery) {
+                        Icon(
+                            imageVector = Icons.Filled.PhotoLibrary,
+                            contentDescription = null
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.choose_from_gallery))
+                    }
+                }
+
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },

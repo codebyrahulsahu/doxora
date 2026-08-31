@@ -36,6 +36,25 @@ class DocumentOpenerImpl(private val appContext: Context) : DocumentOpener {
         startActivitySafely(chooser)
     }
 
+    override fun sharePdf(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+
+        if (uris.size == 1) {
+            sharePdf(uris.first())
+            return
+        }
+
+        val shareIntent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+            type = "application/pdf"
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        val chooser = Intent.createChooser(shareIntent, "Compartir documentos")
+        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivitySafely(chooser)
+    }
+
     /**
      * Safely attempts to start an activity, handling cases where no suitable
      * application is installed to handle the [intent].

@@ -6,14 +6,20 @@ import androidx.lifecycle.viewModelScope
 import es.pile.DocumentModel
 import es.pile.R
 import es.pile.core.domain.models.DocumentCoverItem
+import es.pile.core.domain.models.DocumentViewMode
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.repositories.FavoritesRepository
+import es.pile.core.domain.repositories.SettingsRepository
 import es.pile.core.domain.useCases.CreatePileUseCase
 import es.pile.core.domain.useCases.GetDocumentSizesUseCase
 import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
 import es.pile.core.ui.util.UiText
+import es.pile.features.documentDetail.domain.helper.DocumentOpener
+import es.pile.features.documentDetail.domain.useCases.MoveDocumentToTrashUseCase
+import es.pile.features.documentDetail.domain.useCases.export.ExportDocumentUseCase
+import es.pile.features.documentDetail.domain.useCases.export.GetPdfUriUseCase
 import es.pile.features.home.domain.models.TemporaryDocumentBackup
 import es.pile.features.home.domain.schedulers.CleanupScheduler
 import es.pile.features.home.domain.useCases.CreateDocumentUseCase
@@ -39,7 +45,12 @@ class HomeViewModel(
     private val bitmapCacheRepository: BitmapCacheRepository,
     private val fileRepository: FileRepository,
     private val favoritesRepository: FavoritesRepository,
-    private val documentLockRepository: DocumentLockRepository
+    private val documentLockRepository: DocumentLockRepository,
+    private val settingsRepository: SettingsRepository,
+    private val moveDocumentToTrashUseCase: MoveDocumentToTrashUseCase,
+    private val getPdfUriUseCase: GetPdfUriUseCase,
+    private val exportDocumentUseCase: ExportDocumentUseCase,
+    private val documentOpener: DocumentOpener
 ) : ViewModel() {
     private var _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
@@ -62,6 +73,11 @@ class HomeViewModel(
         viewModelScope.launch {
             documentLockRepository.lockedDocumentIds.collect { ids ->
                 _state.update { it.copy(lockedDocumentIds = ids) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.userSettings.collect { settings ->
+                _state.update { it.copy(viewMode = settings.documentViewMode) }
             }
         }
         viewModelScope.launch {
@@ -155,7 +171,143 @@ class HomeViewModel(
                 _state.update { it.copy(sortOrder = event.sortOrder) }
             }
 
+            is HomeEvent.OnViewModeChanged -> viewModelScope.launch {
+                settingsRepository.updateDocumentViewMode(event.viewMode)
+            }
+
+            // Multi selection actions
+            is HomeEvent.OnDocumentLongPressed -> {
+                val alreadySelected = event.documentId in state.value.selectedDocumentIds
+
+                _state.update {
+                    it.copy(
+                        selectedDocumentIds = if (alreadySelected) {
+                            it.selectedDocumentIds - event.documentId
+                        } else {
+                            it.selectedDocumentIds + event.documentId
+                        }
+                    )
+                }
+            }
+
+            is HomeEvent.OnDocumentSelectionToggled -> {
+                _state.update {
+                    it.copy(
+                        selectedDocumentIds = if (event.documentId in it.selectedDocumentIds) {
+                            it.selectedDocumentIds - event.documentId
+                        } else {
+                            it.selectedDocumentIds + event.documentId
+                        }
+                    )
+                }
+            }
+
+            HomeEvent.OnSelectionCleared -> clearSelection()
+
+            HomeEvent.OnExportSelectedClicked -> exportSelectedDocuments()
+
+            HomeEvent.OnShareSelectedClicked -> shareSelectedDocuments()
+
+            HomeEvent.OnDeleteSelectedClicked -> deleteSelectedDocuments()
+
+            HomeEvent.OnSelectedDocumentsDeleted -> clearSelection()
+
             HomeEvent.OnErrorDismissed -> _state.update { it.copy(errorMessage = null) }
+        }
+    }
+
+    private fun clearSelection() {
+        _state.update { it.copy(selectedDocumentIds = emptySet()) }
+    }
+
+    private fun selectedDocuments(): List<DocumentModel> {
+        val selectedIds = state.value.selectedDocumentIds
+
+        return state.value.documentCoverItems
+            .map { it.document }
+            .filter { it.id in selectedIds }
+    }
+
+    /**
+     * Exports every selected document as a PDF file to the device's Downloads folder.
+     */
+    private fun exportSelectedDocuments() {
+        viewModelScope.launch {
+            val documents = selectedDocuments()
+            if (documents.isEmpty()) return@launch
+
+            _state.update { it.copy(isSelectionWorking = true) }
+
+            var exportedCount = 0
+            documents.forEach { document ->
+                runCatching { exportDocumentUseCase(document) }
+                    .onSuccess { exportedCount++ }
+
+                Napier.d { "Exported ${exportedCount}/${documents.size} documents" }
+            }
+
+            _state.update {
+                it.copy(
+                    isSelectionWorking = false,
+                    selectedDocumentIds = emptySet(),
+                    errorMessage = if (exportedCount > 0) {
+                        UiText.StringResource(R.string.documents_exported, exportedCount)
+                    } else {
+                        UiText.StringResource(R.string.error_exporting_documents)
+                    }
+                )
+            }
+        }
+    }
+
+    /**
+     * Opens the system share sheet with a PDF file of every selected document.
+     */
+    private fun shareSelectedDocuments() {
+        viewModelScope.launch {
+            val documents = selectedDocuments()
+            if (documents.isEmpty()) return@launch
+
+            _state.update { it.copy(isSelectionWorking = true) }
+
+            val uris = documents.mapNotNull { document ->
+                runCatching { getPdfUriUseCase(document) }.getOrNull()
+            }
+
+            _state.update { it.copy(isSelectionWorking = false) }
+
+            if (uris.isEmpty()) {
+                _state.update {
+                    it.copy(errorMessage = UiText.StringResource(R.string.error_sharing_documents))
+                }
+            } else {
+                clearSelection()
+                documentOpener.sharePdf(uris)
+            }
+        }
+    }
+
+    /**
+     * Moves every selected document into the Recycle Bin.
+     */
+    private fun deleteSelectedDocuments() {
+        viewModelScope.launch {
+            val documents = selectedDocuments()
+            if (documents.isEmpty()) return@launch
+
+            documents.forEach { document ->
+                moveDocumentToTrashUseCase(document)
+            }
+
+            _state.update {
+                it.copy(
+                    selectedDocumentIds = emptySet(),
+                    errorMessage = UiText.StringResource(
+                        R.string.documents_moved_to_recycle_bin,
+                        documents.size
+                    )
+                )
+            }
         }
     }
 
