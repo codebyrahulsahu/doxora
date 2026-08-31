@@ -3,6 +3,9 @@ package es.pile.core.ui.composables
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,9 +19,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,6 +44,7 @@ import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import es.pile.DocumentModel
 import es.pile.R
@@ -55,7 +61,10 @@ import java.util.Locale
  * @param documentSizes Map from document ID to size in bytes.
  * @param bitmapCache Bitmaps already loaded, indexed by cover cache key.
  * @param onLoadBitmap Called when a cover is not cached yet.
- * @param lockedDocumentIds Ids of the documents protected with a PIN.
+ * @param lockedDocumentIds Ids of the documents protected with a PIN or a pattern.
+ * @param selectedDocumentIds Ids of the documents selected in multi selection mode.
+ * @param onDocumentLongPress Called when a row is long pressed (enters the multi
+ * selection mode). Null to disable the long press.
  * @param backgroundColor Background painted behind every row (used for
  * grouped lists).
  */
@@ -66,10 +75,14 @@ fun LazyListScope.itemDocumentsVerticalList(
     bitmapCache: Map<String, Bitmap> = emptyMap(),
     onLoadBitmap: suspend (document: DocumentModel) -> Unit = {},
     lockedDocumentIds: Set<String> = emptySet(),
+    selectedDocumentIds: Set<String> = emptySet(),
     onDocumentClick: (documentId: String) -> Unit = {},
+    onDocumentLongPress: ((documentId: String) -> Unit)? = null,
     favoriteDocumentIds: Set<String> = emptySet(),
     onFavoriteToggle: (documentId: String) -> Unit = {}
 ) {
+    val isSelectionMode = selectedDocumentIds.isNotEmpty()
+
     documents.forEach { documentItem ->
         item(key = "document_${documentItem.document.id}") {
             val coverKey = documentItem.coverImageCacheKey
@@ -86,6 +99,11 @@ fun LazyListScope.itemDocumentsVerticalList(
                 sizeBytes = documentSizes[documentItem.document.id],
                 coverBitmap = coverBitmap,
                 onClick = onDocumentClick,
+                onLongClick = onDocumentLongPress?.let { callback ->
+                    { callback(documentItem.document.id) }
+                },
+                isSelected = documentItem.document.id in selectedDocumentIds,
+                isSelectionMode = isSelectionMode,
                 isFavorite = documentItem.document.id in favoriteDocumentIds,
                 onFavoriteToggle = onFavoriteToggle,
                 isLocked = documentItem.document.id in lockedDocumentIds,
@@ -96,6 +114,68 @@ fun LazyListScope.itemDocumentsVerticalList(
             )
         }
     }
+}
+
+/**
+ * Renders the documents as a grid of big cover thumbnails ("icon view").
+ *
+ * @param availableWidth Width available for the grid, used to compute the
+ * number of columns.
+ * @param documents Documents to display, already ordered by the caller.
+ * @param bitmapCache Bitmaps already loaded, indexed by cover cache key.
+ * @param onLoadBitmap Called when a cover is not cached yet.
+ * @param lockedDocumentIds Ids of the documents protected with a PIN or a pattern.
+ * @param selectedDocumentIds Ids of the documents selected in multi selection mode.
+ * @param onDocumentLongPress Called when an item is long pressed (enters the multi
+ * selection mode). Null to disable the long press.
+ */
+fun LazyListScope.itemDocumentsIconGrid(
+    availableWidth: Dp,
+    backgroundColor: Color = Color.Transparent,
+    documents: List<DocumentCoverItem>,
+    bitmapCache: Map<String, Bitmap> = emptyMap(),
+    onLoadBitmap: suspend (document: DocumentModel) -> Unit = {},
+    lockedDocumentIds: Set<String> = emptySet(),
+    selectedDocumentIds: Set<String> = emptySet(),
+    onDocumentClick: (documentId: String) -> Unit = {},
+    onDocumentLongPress: ((documentId: String) -> Unit)? = null,
+    favoriteDocumentIds: Set<String> = emptySet(),
+    onFavoriteToggle: (documentId: String) -> Unit = {}
+) {
+    val isSelectionMode = selectedDocumentIds.isNotEmpty()
+
+    adaptiveSizeItemsGrid(
+        backgroundColor = backgroundColor,
+        availableWidth = availableWidth,
+        itemList = documents,
+        minimumItemWidth = 105.dp,
+        horizontalSpacing = 16.dp,
+        verticalSpacing = 16.dp,
+        horizontalPadding = 16.dp,
+        content = { modifier, documentItem ->
+            val key = documentItem.coverImageCacheKey
+            val cachedBitmap: Bitmap? = bitmapCache[key]
+
+            if (cachedBitmap == null) {
+                LaunchedEffect(key1 = key) {
+                    onLoadBitmap(documentItem.document)
+                }
+            }
+
+            Document(
+                documentModel = documentItem.document,
+                imageBitmap = cachedBitmap?.asImageBitmap(),
+                modifier = modifier,
+                onClick = onDocumentClick,
+                onLongClick = onDocumentLongPress?.let { callback ->
+                    { callback(documentItem.document.id) }
+                },
+                isSelected = documentItem.document.id in selectedDocumentIds,
+                isLocked = documentItem.document.id in lockedDocumentIds,
+                isFavorite = documentItem.document.id in favoriteDocumentIds
+            )
+        }
+    )
 }
 
 /**
@@ -110,12 +190,34 @@ fun DocumentRowCard(
     isFavorite: Boolean = false,
     onFavoriteToggle: (String) -> Unit = {},
     isLocked: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    isSelected: Boolean = false,
+    isSelectionMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val clickableModifier = if (onLongClick != null) {
+        Modifier.combinedClickable(
+            onClick = { onClick(documentModel.id) },
+            onLongClick = onLongClick
+        )
+    } else {
+        Modifier.clickable { onClick(documentModel.id) }
+    }
+
+    val rowShape = RoundedCornerShape(18.dp)
+
     Card(
-        onClick = { onClick(documentModel.id) },
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(clickableModifier)
+            .then(
+                if (isSelected) {
+                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, rowShape)
+                } else {
+                    Modifier
+                }
+            ),
+        shape = rowShape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -185,30 +287,50 @@ fun DocumentRowCard(
                 }
             }
 
-            IconButton(
-                onClick = { onFavoriteToggle(documentModel.id) },
-                colors = IconButtonDefaults.iconButtonColors(
-                    contentColor = if (isFavorite) {
+            if (isSelectionMode) {
+                Icon(
+                    imageVector = if (isSelected) {
+                        Icons.Filled.CheckCircle
+                    } else {
+                        Icons.Outlined.RadioButtonUnchecked
+                    },
+                    contentDescription = if (isSelected) {
+                        stringResource(R.string.selected_)
+                    } else {
+                        stringResource(R.string.select)
+                    },
+                    tint = if (isSelected) {
                         MaterialTheme.colorScheme.primary
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )
-            ) {
+            } else {
+                IconButton(
+                    onClick = { onFavoriteToggle(documentModel.id) },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        contentColor = if (isFavorite) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        contentDescription = if (isFavorite) {
+                            stringResource(R.string.remove_from_favorites)
+                        } else {
+                            stringResource(R.string.add_to_favorites)
+                        }
+                    )
+                }
                 Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                    contentDescription = if (isFavorite) {
-                        stringResource(R.string.remove_from_favorites)
-                    } else {
-                        stringResource(R.string.add_to_favorites)
-                    }
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Icon(
-                imageVector = Icons.Filled.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

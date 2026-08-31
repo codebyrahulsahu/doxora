@@ -13,6 +13,22 @@
     <string name="sort_newest">Newest first</string>
     <string name="sort_oldest">Oldest first</string>
 
+    <!-- Document view options -->
+    <string name="list_view">List View</string>
+    <string name="icon_view">Icon View</string>
+
+    <!-- Multi selection actions -->
+    <string name="documents_selected">%1$d selected</string>
+    <string name="export">Export</string>
+    <string name="share">Share</string>
+    <string name="preparing_documents">Preparing your documents…</string>
+    <string name="documents_exported">%1$d documents exported to Downloads</string>
+    <string name="error_exporting_documents">Error exporting the documents</string>
+    <string name="error_sharing_documents">Error sharing the documents</string>
+    <string name="documents_moved_to_recycle_bin">%1$d documents moved to the Recycle Bin</string>
+    <string name="delete_documents_alert_title">Move %1$d documents to the Recycle Bin?</string>
+    <string name="delete_documents_alert_body">They will be permanently deleted after 30 days. You can restore them any time before that.</string>
+
     <string name="pile_item_count">%1$d items</string>
     <string name="pile_document_count">%1$d documents</string>
     <string name="untitled_document">Untitled document</string>
@@ -166,6 +182,14 @@
     <string name="profile_name_default">Pile User</string>
     <string name="profile_email_default">you@example.com</string>
     <string name="edit_profile">Edit profile</string>
+    <string name="profile_picture">Profile picture</string>
+    <string name="choose_from_gallery">Choose from gallery</string>
+    <string name="remove_photo">Remove photo</string>
+    <string name="change_profile_picture">Change profile picture</string>
+    <string name="change_profile_picture_hint">Tap the photo to change it</string>
+    <string name="profile_picture_updated">Profile picture updated</string>
+    <string name="saving_profile_picture">Saving your picture…</string>
+    <string name="error_setting_profile_picture">Error setting the profile picture</string>
     <string name="save">Save</string>
 
     <string name="local_backup_restore">Local Backup &amp; Restore</string>
@@ -214,17 +238,30 @@
     <string name="error_recognizing_text">Error recognizing the text</string>
     <string name="copy">Copy</string>
 
-    <!-- Per document PIN protection -->
+    <!-- Per document PIN / pattern protection -->
+    <string name="protect_document">Protect document</string>
+    <string name="choose_lock_type">Choose lock type</string>
+    <string name="choose_lock_type_body">Protect this document with a PIN or with a pattern you draw with your finger.</string>
+    <string name="pin_lock">PIN</string>
+    <string name="pattern_lock">Pattern</string>
     <string name="lock_document">Lock with PIN</string>
     <string name="set_pin_body">Choose a %1$d digit PIN for this document.</string>
     <string name="confirm_pin">Confirm your PIN</string>
     <string name="pins_do_not_match">The PINs don\'t match, try again</string>
-    <string name="remove_document_lock">Remove PIN lock</string>
+    <string name="lock_with_pattern">Lock with pattern</string>
+    <string name="set_pattern_body">Draw an unlock pattern connecting at least %1$d dots.</string>
+    <string name="confirm_pattern">Confirm your pattern</string>
+    <string name="confirm_pattern_body">Draw the same pattern again to confirm it.</string>
+    <string name="patterns_do_not_match">The patterns don\'t match, try again</string>
+    <string name="remove_document_lock">Remove document lock</string>
     <string name="remove_document_lock_body">Type the current PIN to unlock this document.</string>
+    <string name="remove_document_pattern_body">Draw the current pattern to unlock this document.</string>
     <string name="locked_document_title">Locked document</string>
     <string name="locked_document_body">Type the PIN to open this document.</string>
-    <string name="document_locked">Locked with PIN</string>
+    <string name="locked_document_pattern_body">Draw the pattern to open this document.</string>
+    <string name="document_locked">Locked</string>
     <string name="incorrect_pin">Incorrect PIN, try again</string>
+    <string name="incorrect_pattern">Incorrect pattern, try again</string>
 
     <string name="about_support">About &amp; Support</string>
     <string name="support_qr_description">Google Pay QR code</string>

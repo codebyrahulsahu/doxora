@@ -11,4 +11,8 @@ data class UserSettings(
     val imageResolution: ImageResolution = ImageResolution.ORIGINAL,
     val profileName: String? = null,
     val profileEmail: String? = null,
+    /** File name (inside the app's internal storage) of the profile picture, if any. */
+    val profilePicturePath: String? = null,
+    /** Layout used to show the documents in the main screen. */
+    val documentViewMode: DocumentViewMode = DocumentViewMode.LIST,
 )

@@ -5,6 +5,7 @@ import es.pile.DocumentModel
 import es.pile.PileModel
 import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentSortOrder
+import es.pile.core.domain.models.DocumentViewMode
 import es.pile.core.ui.util.UiText
 
 
@@ -16,14 +17,20 @@ data class HomeState(
     val pileDocumentCounts: Map<String, Int> = emptyMap(),
     val documentSizes: Map<String, Long> = emptyMap(),
     val sortOrder: DocumentSortOrder = DocumentSortOrder.NEWEST,
+    val viewMode: DocumentViewMode = DocumentViewMode.LIST,
     val cameraUri: Uri? = null,
     val showDraftWarning: Boolean = false,
     val isLoadingNewDocument: Boolean = false,
     val isInitialLoading: Boolean = true,
     val favoriteDocumentIds: Set<String> = emptySet(),
     val lockedDocumentIds: Set<String> = emptySet(),
+    val selectedDocumentIds: Set<String> = emptySet(),
+    val isSelectionWorking: Boolean = false,
     val errorMessage: UiText? = null
-)
+) {
+    /** True while one or more documents are selected in the multi selection mode. */
+    val isSelectionMode: Boolean get() = selectedDocumentIds.isNotEmpty()
+}
 
 sealed interface HomeEvent {
     data class OnImageDisplayed(val document: DocumentModel) : HomeEvent
@@ -45,6 +52,17 @@ sealed interface HomeEvent {
     data object OnDismissDraftWarning : HomeEvent
 
     data class OnSortOrderChanged(val sortOrder: DocumentSortOrder) : HomeEvent
+
+    data class OnViewModeChanged(val viewMode: DocumentViewMode) : HomeEvent
+
+    // Multi selection actions
+    data class OnDocumentLongPressed(val documentId: String) : HomeEvent
+    data class OnDocumentSelectionToggled(val documentId: String) : HomeEvent
+    data object OnSelectionCleared : HomeEvent
+    data object OnExportSelectedClicked : HomeEvent
+    data object OnShareSelectedClicked : HomeEvent
+    data object OnDeleteSelectedClicked : HomeEvent
+    data object OnSelectedDocumentsDeleted : HomeEvent
 
     data object OnErrorDismissed : HomeEvent
 }

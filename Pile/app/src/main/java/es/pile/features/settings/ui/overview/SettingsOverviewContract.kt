@@ -4,6 +4,7 @@ import android.net.Uri
 import es.pile.core.domain.models.AppTheme
 import es.pile.core.domain.models.ImageResolution
 import es.pile.core.ui.util.UiText
+import java.io.File
 
 data class SettingsOverviewState(
     val isLoading: Boolean = true,
@@ -14,6 +15,9 @@ data class SettingsOverviewState(
     val imageResolution: ImageResolution = ImageResolution.LOW,
     val profileName: String? = null,
     val profileEmail: String? = null,
+    val profilePictureFile: File? = null,
+    val isWorkingOnProfilePicture: Boolean = false,
+    val profilePictureMessage: UiText? = null,
     val isWorkingOnBackup: Boolean = false,
     val backupMessage: UiText? = null
 )
@@ -25,6 +29,11 @@ sealed interface SettingsOverviewEvent {
     data object OnMaterialColorToggled : SettingsOverviewEvent
     data object OnLocalAiToggled : SettingsOverviewEvent
     data class OnProfileUpdated(val name: String, val email: String) : SettingsOverviewEvent
+
+    // Profile picture
+    data class OnProfilePicturePicked(val uri: Uri) : SettingsOverviewEvent
+    data object OnProfilePictureRemoved : SettingsOverviewEvent
+    data object OnProfilePictureMessageDismissed : SettingsOverviewEvent
 
     // Local backup & restore
     data class OnBackupExported(val uri: Uri) : SettingsOverviewEvent

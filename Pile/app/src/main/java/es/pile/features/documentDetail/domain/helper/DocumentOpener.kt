@@ -21,4 +21,12 @@ interface DocumentOpener {
      * @param uri The FileProvider [Uri] of the PDF to be shared.
      */
     fun sharePdf(uri: Uri)
+
+    /**
+     * Launches the system share sheet with several PDF files at once
+     * ([Intent.ACTION_SEND_MULTIPLE]).
+     *
+     * @param uris The FileProvider [Uri]s of the PDFs to be shared. Must not be empty.
+     */
+    fun sharePdf(uris: List<Uri>)
 }

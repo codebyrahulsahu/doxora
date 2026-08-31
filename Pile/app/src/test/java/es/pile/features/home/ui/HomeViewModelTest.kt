@@ -2,13 +2,19 @@ package es.pile.features.home.ui
 
 import es.pile.DocumentModel
 import es.pile.PileModel
+import es.pile.core.domain.models.UserSettings
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.FavoritesRepository
 import es.pile.core.domain.repositories.FileRepository
+import es.pile.core.domain.repositories.SettingsRepository
 import es.pile.core.domain.useCases.CreatePileUseCase
 import es.pile.core.domain.useCases.GetDocumentSizesUseCase
 import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
+import es.pile.features.documentDetail.domain.helper.DocumentOpener
+import es.pile.features.documentDetail.domain.useCases.MoveDocumentToTrashUseCase
+import es.pile.features.documentDetail.domain.useCases.export.ExportDocumentUseCase
+import es.pile.features.documentDetail.domain.useCases.export.GetPdfUriUseCase
 import es.pile.features.home.domain.schedulers.CleanupScheduler
 import es.pile.features.home.domain.useCases.CreateDocumentUseCase
 import es.pile.features.home.domain.useCases.GetHomeDataUseCase
@@ -49,6 +55,13 @@ class HomeViewModelTest {
     private val documentLockRepository: DocumentLockRepository = mockk {
         every { lockedDocumentIds } returns flowOf(emptySet())
     }
+    private val settingsRepository: SettingsRepository = mockk(relaxed = true) {
+        every { userSettings } returns flowOf(UserSettings())
+    }
+    private val moveDocumentToTrashUseCase: MoveDocumentToTrashUseCase = mockk(relaxed = true)
+    private val getPdfUriUseCase: GetPdfUriUseCase = mockk(relaxed = true)
+    private val exportDocumentUseCase: ExportDocumentUseCase = mockk(relaxed = true)
+    private val documentOpener: DocumentOpener = mockk(relaxed = true)
 
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -88,7 +101,12 @@ class HomeViewModelTest {
             bitmapCacheRepository,
             fileRepository,
             favoritesRepository,
-            documentLockRepository
+            documentLockRepository,
+            settingsRepository,
+            moveDocumentToTrashUseCase,
+            getPdfUriUseCase,
+            exportDocumentUseCase,
+            documentOpener
         )
 
         // Then

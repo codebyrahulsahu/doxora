@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import es.pile.R
 import es.pile.core.domain.models.DocumentDetail
 import es.pile.core.domain.models.DocumentExportFormat
+import es.pile.core.domain.models.DocumentLockType
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
@@ -105,6 +106,12 @@ class DocumentDetailViewModel(
         viewModelScope.launch {
             documentLockRepository.lockedDocumentIds.collect { ids ->
                 _state.update { it.copy(isLocked = documentId in ids) }
+
+                if (documentId in ids) {
+                    _state.update {
+                        it.copy(lockType = documentLockRepository.getLockType(documentId))
+                    }
+                }
             }
         }
     }
@@ -133,19 +140,19 @@ class DocumentDetailViewModel(
                 favoritesRepository.setFavorite(documentId, !state.value.isFavorite)
             }
 
-            is DocumentDetailEvent.OnLockDocument -> lockDocument(event.pin)
+            is DocumentDetailEvent.OnLockDocument -> lockDocument(event.secret, event.type)
 
             DocumentDetailEvent.OnMessageDismissed -> _state.update { it.copy(userMessage = null) }
         }
     }
 
     /**
-     * Tries to unlock the document with [pin].
+     * Tries to unlock the document with [secret] (a PIN or a pattern).
      *
-     * @return true when the PIN was correct and the document can be displayed.
+     * @return true when the secret was correct and the document can be displayed.
      */
-    suspend fun unlockDocument(pin: String): Boolean {
-        val unlocked = documentLockRepository.verifyPin(documentId, pin)
+    suspend fun unlockDocument(secret: String): Boolean {
+        val unlocked = documentLockRepository.verifySecret(documentId, secret)
 
         if (unlocked) {
             _state.update { it.copy(isUnlocked = true) }
@@ -155,10 +162,10 @@ class DocumentDetailViewModel(
     }
 
     /**
-     * Removes the PIN protection of the document, but only if [pin] is the current one.
+     * Removes the protection of the document, but only if [secret] is the current one.
      */
-    suspend fun removeDocumentLock(pin: String): Boolean =
-        documentLockRepository.unlockDocument(documentId, pin)
+    suspend fun removeDocumentLock(secret: String): Boolean =
+        documentLockRepository.unlockDocument(documentId, secret)
 
     private fun requestBitmapLoad(pageNumber: Int) {
         viewModelScope.launch {
@@ -221,10 +228,10 @@ class DocumentDetailViewModel(
         }
     }
 
-    private fun lockDocument(pin: String) {
+    private fun lockDocument(secret: String, type: DocumentLockType) {
         viewModelScope.launch {
-            documentLockRepository.lockDocument(documentId, pin)
-            _state.update { it.copy(isUnlocked = true) }
+            documentLockRepository.lockDocument(documentId, secret, type)
+            _state.update { it.copy(isUnlocked = true, lockType = type) }
         }
     }
 

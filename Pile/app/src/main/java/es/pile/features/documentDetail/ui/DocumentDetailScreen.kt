@@ -118,6 +118,7 @@ import es.pile.PileModel
 import es.pile.R
 import es.pile.core.domain.models.DocumentDetail
 import es.pile.core.domain.models.DocumentExportFormat
+import es.pile.core.domain.models.DocumentLockType
 import es.pile.core.domain.models.StringDetail
 import es.pile.core.ui.composables.AlertNewPile
 import es.pile.core.ui.composables.LoadingAlert
@@ -126,9 +127,11 @@ import es.pile.core.ui.composables.Pile
 import es.pile.core.ui.composables.SelectPilesBottomSheet
 import es.pile.core.ui.composables.SwipeBox
 import es.pile.core.ui.theme.PileTheme
+import es.pile.features.documentDetail.ui.composables.ChooseDocumentLockTypeDialog
 import es.pile.features.documentDetail.ui.composables.DocumentLockContent
 import es.pile.features.documentDetail.ui.composables.DocumentTextSection
-import es.pile.features.documentDetail.ui.composables.RemoveDocumentPinDialog
+import es.pile.features.documentDetail.ui.composables.RemoveDocumentLockDialog
+import es.pile.features.documentDetail.ui.composables.SetDocumentPatternDialog
 import es.pile.features.documentDetail.ui.composables.SetDocumentPinDialog
 import es.pile.features.documentDetail.ui.composables.SectionTitleBar
 import es.pile.features.documentDetail.ui.composables.SimpleTextField
@@ -162,7 +165,8 @@ fun DocumentDetailScreen(
     if (state.isLocked && !state.isUnlocked) {
         DocumentLockContent(
             modifier = modifier,
-            onUnlock = { pin -> viewModel.unlockDocument(pin) },
+            lockType = state.lockType,
+            onUnlock = { secret -> viewModel.unlockDocument(secret) },
             popBackStack = popBackStack
         )
     } else {
@@ -227,7 +231,7 @@ private fun DocumentDetailContent(
     state: DocumentDetailState,
     bitmapCache: Map<String, Bitmap>,
     onEvent: (DocumentDetailEvent) -> Unit,
-    onRemoveDocumentLock: suspend (pin: String) -> Boolean,
+    onRemoveDocumentLock: suspend (secret: String) -> Boolean,
     onExportDocument: (DocumentExportFormat) -> Unit = {},
     navigateToPileDetail: (pileId: String) -> Unit,
     navigateToEditDocument: (documentId: String) -> Unit,
@@ -237,7 +241,9 @@ private fun DocumentDetailContent(
     var showDeleteDocumentAlert by rememberSaveable { mutableStateOf(false) }
     var showDocumentPilesBottomSheet by rememberSaveable { mutableStateOf(false) }
     var showNewPileAlert by rememberSaveable { mutableStateOf(false) }
+    var showChooseLockTypeAlert by rememberSaveable { mutableStateOf(false) }
     var showSetPinAlert by rememberSaveable { mutableStateOf(false) }
+    var showSetPatternAlert by rememberSaveable { mutableStateOf(false) }
     var showRemovePinAlert by rememberSaveable { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
@@ -313,7 +319,7 @@ private fun DocumentDetailContent(
                 isLocked = state.isLocked,
                 onLockClick = {
                     if (state.isLocked) showRemovePinAlert = true
-                    else showSetPinAlert = true
+                    else showChooseLockTypeAlert = true
                 }
             )
         },
@@ -515,21 +521,45 @@ private fun DocumentDetailContent(
         )
     }
 
+    if (showChooseLockTypeAlert) {
+        ChooseDocumentLockTypeDialog(
+            onDismiss = { showChooseLockTypeAlert = false },
+            onLockTypeChosen = { type ->
+                showChooseLockTypeAlert = false
+                when (type) {
+                    DocumentLockType.PIN -> showSetPinAlert = true
+                    DocumentLockType.PATTERN -> showSetPatternAlert = true
+                }
+            }
+        )
+    }
+
     if (showSetPinAlert) {
         SetDocumentPinDialog(
             onDismiss = { showSetPinAlert = false },
             onConfirm = { pin ->
                 showSetPinAlert = false
-                onEvent(DocumentDetailEvent.OnLockDocument(pin))
+                onEvent(DocumentDetailEvent.OnLockDocument(pin, DocumentLockType.PIN))
+            }
+        )
+    }
+
+    if (showSetPatternAlert) {
+        SetDocumentPatternDialog(
+            onDismiss = { showSetPatternAlert = false },
+            onConfirm = { pattern ->
+                showSetPatternAlert = false
+                onEvent(DocumentDetailEvent.OnLockDocument(pattern, DocumentLockType.PATTERN))
             }
         )
     }
 
     if (showRemovePinAlert) {
-        RemoveDocumentPinDialog(
+        RemoveDocumentLockDialog(
+            lockType = state.lockType,
             onDismiss = { showRemovePinAlert = false },
-            onConfirm = { pin ->
-                val removed = onRemoveDocumentLock(pin)
+            onConfirm = { secret ->
+                val removed = onRemoveDocumentLock(secret)
 
                 if (removed) showRemovePinAlert = false
 
@@ -599,7 +629,7 @@ private fun ScreenTopAppBar(
                     contentDescription = if (isLocked) {
                         stringResource(R.string.remove_document_lock)
                     } else {
-                        stringResource(R.string.lock_document)
+                        stringResource(R.string.protect_document)
                     },
                     tint = if (isLocked) {
                         MaterialTheme.colorScheme.primary

@@ -2,6 +2,7 @@ package es.pile.core.data.repositories
 
 import androidx.datastore.core.DataStore
 import es.pile.core.domain.models.AppTheme
+import es.pile.core.domain.models.DocumentViewMode
 import es.pile.core.domain.models.ImageResolution
 import es.pile.core.domain.models.UserSettings
 import es.pile.core.domain.repositories.SettingsRepository
@@ -66,4 +67,15 @@ class DataStoreSettingsRepository(
         }
     }
 
+    override suspend fun updateDocumentViewMode(viewMode: DocumentViewMode) {
+        withContext(ioDispatcher) {
+            dataStore.updateData { it.copy(documentViewMode = viewMode) }
+        }
+    }
+
+    override suspend fun updateProfilePicturePath(path: String?) {
+        withContext(ioDispatcher) {
+            dataStore.updateData { it.copy(profilePicturePath = path) }
+        }
+    }
 }
