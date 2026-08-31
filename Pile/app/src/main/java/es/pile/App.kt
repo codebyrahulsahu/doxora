@@ -11,8 +11,10 @@ import es.pile.features.documentDetail.di.documentDetailModule
 import es.pile.features.editDocument.di.editDocumentModule
 import es.pile.features.externalImport.di.externalImportModule
 import es.pile.features.home.di.homeModule
+import es.pile.features.home.domain.schedulers.CleanupScheduler
 import es.pile.features.onboarding.di.onboardingModule
 import es.pile.features.pileDetail.di.pileDetailModule
+import es.pile.features.recycleBin.di.recycleBinModule
 import es.pile.features.search.di.searchModule
 import es.pile.features.settings.di.settingsModule
 import io.github.aakira.napier.DebugAntilog
@@ -21,6 +23,7 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.androidx.workmanager.koin.workManagerFactory
 import org.koin.core.context.startKoin
+import org.koin.java.KoinJavaComponent
 
 class App : Application() {
     override fun onCreate() {
@@ -48,8 +51,15 @@ class App : Application() {
                 editDocumentModule,
                 addDocumentModule,
                 externalImportModule,
-                settingsModule
+                settingsModule,
+                recycleBinModule
             )
         }
+
+        // Purge every Recycle Bin entry whose 30 days retention period expired
+        // while the app (or the device) was closed.
+        KoinJavaComponent.getKoin()
+            .get<CleanupScheduler>()
+            .scheduleTrashStartupCleanup()
     }
 }

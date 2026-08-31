@@ -2,6 +2,7 @@ package es.pile.features.home.domain.useCases
 
 import es.pile.DocumentModel
 import es.pile.PileModel
+import es.pile.core.domain.models.DocumentStatusConstants.SAVED
 import es.pile.core.domain.models.DocumentStatusConstants.TEMPORARY
 import es.pile.core.domain.repositories.DocumentModelRepository
 import es.pile.core.domain.repositories.PileModelRepository
@@ -52,16 +53,16 @@ class GetHomeDataUseCase(
             documentModelRepository.documentModels
         ) { piles, documents ->
             val temporaryDocument = documents.find { it.documentStatus == TEMPORARY }
-            val coloredPileIds = documents.flatMap { it.documentPileIds }.distinct()
-            val persistentDocuments = documents.filter { it.documentStatus != TEMPORARY }
-            val pileDocumentCounts = persistentDocuments
+            val activeDocuments = documents.filter { it.documentStatus == SAVED }
+            val coloredPileIds = activeDocuments.flatMap { it.documentPileIds }.distinct()
+            val pileDocumentCounts = activeDocuments
                 .flatMap { it.documentPileIds }
                 .groupingBy { it }
                 .eachCount()
 
             HomeData(
                 piles = piles,
-                documents = persistentDocuments,
+                documents = activeDocuments,
                 temporaryDocument = temporaryDocument,
                 coloredPileIds = coloredPileIds,
                 pileDocumentCounts = pileDocumentCounts

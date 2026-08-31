@@ -81,7 +81,8 @@ fun SettingsOverviewScreen(
     viewModel: SettingsOverviewViewModel = koinViewModel(),
     popBackStack: () -> Unit,
     navigateToSettingsResolution: () -> Unit,
-    navigateToFavorites: () -> Unit = {}
+    navigateToFavorites: () -> Unit = {},
+    navigateToRecycleBin: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -108,6 +109,7 @@ fun SettingsOverviewScreen(
     SettingsOverviewContent(
         state = state,
         navigateToFavorites = navigateToFavorites,
+        navigateToRecycleBin = navigateToRecycleBin,
         onExportBackup = {
             exportBackupLauncher.launch("pile-backup-${System.currentTimeMillis()}.zip")
         },
@@ -194,6 +196,7 @@ fun SettingsOverviewContent(
     state: SettingsOverviewState,
     onEvent: (SettingsOverviewEvent) -> Unit,
     navigateToFavorites: () -> Unit = {},
+    navigateToRecycleBin: () -> Unit = {},
     onExportBackup: () -> Unit = {},
     onImportBackup: () -> Unit = {},
     onOpenUrl: (String) -> Unit = {},
@@ -256,7 +259,8 @@ fun SettingsOverviewContent(
                 )
 
                 LibrarySection(
-                    onFavoritesClick = navigateToFavorites
+                    onFavoritesClick = navigateToFavorites,
+                    onRecycleBinClick = navigateToRecycleBin
                 )
 
                 LocalBackupSection(
@@ -435,11 +439,12 @@ private fun ResolutionSection(
 @Composable
 private fun LibrarySection(
     modifier: Modifier = Modifier,
-    onFavoritesClick: () -> Unit
+    onFavoritesClick: () -> Unit,
+    onRecycleBinClick: () -> Unit
 ) {
     SettingsSection(modifier = modifier, title = stringResource(R.string.library)) {
         SettingsItem(
-            itemPosition = ItemPosition.SINGLE,
+            itemPosition = ItemPosition.TOP,
             title = stringResource(R.string.favorites),
             subtitle = stringResource(R.string.favorites_subtitle),
             leadingIcon = {
@@ -450,6 +455,19 @@ private fun LibrarySection(
                 )
             },
             onAction = onFavoritesClick
+        )
+        SettingsItem(
+            itemPosition = ItemPosition.BOTTOM,
+            title = stringResource(R.string.recycle_bin),
+            subtitle = stringResource(R.string.recycle_bin_subtitle),
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_recycle_bin_24px),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            onAction = onRecycleBinClick
         )
     }
 }

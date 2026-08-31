@@ -20,6 +20,7 @@ import es.pile.features.editDocument.ui.EditDocumentScreen
 import es.pile.features.home.ui.HomeScreen
 import es.pile.features.home.ui.FavoritesScreen
 import es.pile.features.pileDetail.ui.PileDetailScreen
+import es.pile.features.recycleBin.ui.RecycleBinScreen
 import es.pile.features.search.ui.SearchScreen
 import es.pile.features.settings.ui.overview.SettingsOverviewScreen
 import es.pile.features.settings.ui.resolution.SettingsResolutionScreen
@@ -174,13 +175,20 @@ fun PileNavigation(modifier: Modifier = Modifier, backStack: NavBackStack<NavKey
                 )
             }
 
+            entry<Pane.RecycleBin> {
+                RecycleBinScreen(
+                    popBackStack = { backStack.removeLastOrNull() }
+                )
+            }
+
             entry<Pane.SettingsOverview> {
                 SettingsOverviewScreen(
                     popBackStack = backStack::removeLastOrNull,
                     navigateToSettingsResolution = {
                         backStack.add(Pane.SettingsResolution)
                     },
-                    navigateToFavorites = { backStack.add(Pane.Favorites) }
+                    navigateToFavorites = { backStack.add(Pane.Favorites) },
+                    navigateToRecycleBin = { backStack.add(Pane.RecycleBin) }
                 )
             }
 

@@ -24,6 +24,9 @@ The project is built with **Kotlin** and **Jetpack Compose**, following a **Clea
 - Reactive state management using Coroutines and Flow
 - Full PDF support
 - Built-in search
+- Per document PIN lock
+- Recycle Bin with 30 days automatic deletion
+- Export documents as PDF or JPG/PNG images
 
 
 ## Tech Stack

@@ -56,8 +56,8 @@
     <string name="share_document">Share document</string>
     <string name="edit_document">Edit document</string>
 
-    <string name="delete_document_alert_title">Delete Document?</string>
-    <string name="delete_document_alert_body">Are you sure you want to delete this document? This action cannot be undone.</string>
+    <string name="delete_document_alert_title">Move to Recycle Bin?</string>
+    <string name="delete_document_alert_body">This document will be moved to the Recycle Bin and permanently deleted after 30 days. You can restore it any time before that.</string>
 
     <string name="added_date">Added %1$s</string>
     <string name="modified_date">Modified %1$s</string>
@@ -93,6 +93,12 @@
 
     <string name="exporting_document">Exporting document</string>
     <string name="pdf_exported_successfully">PDF exported successfully</string>
+    <string name="export_as_pdf">Export as PDF</string>
+    <string name="export_as_jpg">Export as JPG image</string>
+    <string name="export_as_png">Export as PNG image</string>
+    <string name="export_choice">Export</string>
+    <string name="images_exported_successfully">%1$d images exported successfully</string>
+    <string name="error_exporting_images">Error exporting the images</string>
 
     <string name="draft_warning_title">Unsaved Document</string>
     <string name="draft_warning_body">You have an unsaved document. Creating a new one will discard the current draft. Do you want to continue or go back to editing the draft?</string>
@@ -177,6 +183,22 @@
     <string name="library">Library</string>
     <string name="favorites">Favorites</string>
     <string name="favorites_subtitle">Every document you marked with a star</string>
+    <string name="recycle_bin">Recycle Bin</string>
+    <string name="recycle_bin_subtitle">Deleted documents kept for 30 days</string>
+    <string name="recycle_bin_explanation">Deleted documents stay here for %1$d days before they are permanently removed. You can restore them any time before that.</string>
+    <string name="recycle_bin_empty">The Recycle Bin is empty. Documents you delete will stay here for 30 days before being permanently removed.</string>
+    <string name="restore_document">Restore document</string>
+    <string name="document_restored">Document restored</string>
+    <string name="error_restoring_document">Error restoring the document</string>
+    <string name="delete_forever">Delete forever</string>
+    <string name="delete_forever_alert_title">Delete forever?</string>
+    <string name="delete_forever_alert_body">This document and all of its files will be permanently deleted from your device. This action cannot be undone.</string>
+    <string name="document_deleted_forever">Document permanently deleted</string>
+    <string name="error_deleting_document">Error deleting the document</string>
+    <string name="deleted_today">Deleted today</string>
+    <string name="deleted_days_ago">Deleted %1$d days ago</string>
+    <string name="permanently_deleted_in_days">Permanently deleted in %1$d days</string>
+    <string name="deleted_forever_now">Deletion is due</string>
     <string name="no_favorites">You haven\'t marked any document as favorite yet. Tap the star on a document to find it here.</string>
     <string name="add_to_favorites">Add to favorites</string>
     <string name="remove_from_favorites">Remove from favorites</string>
@@ -206,7 +228,7 @@
 
     <string name="about_support">About &amp; Support</string>
     <string name="support_qr_description">Support QR code</string>
-    <string name="support_qr_hint">Scan this QR code to reach out for support</string>
+    <string name="support_qr_hint">Scan this QR code to support the project or reach out for help</string>
     <string name="instagram">Instagram</string>
     <string name="github">GitHub</string>
     <string name="email">Email</string>

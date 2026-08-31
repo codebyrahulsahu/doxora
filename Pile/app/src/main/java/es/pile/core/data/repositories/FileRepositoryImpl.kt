@@ -251,7 +251,7 @@ class FileRepositoryImpl(
 
     override suspend fun createTempPdfCopyWithName(sourceFile: File, displayName: String): File =
         withContext(ioDispatcher) {
-            val safeName = sanitizeFileName(displayName)
+            val safeName = sanitizeFileName(displayName, ".pdf")
 
             val exportDir = File(appContext.cacheDir, "export_pdfs").apply { mkdirs() }
 
@@ -264,50 +264,116 @@ class FileRepositoryImpl(
             return@withContext destinationFile
         }
 
-    override suspend fun exportFileToDownloads(file: File, publicName: String): Result<String> =
-        withContext(ioDispatcher) {
-            runCatching {
-                val safeName = sanitizeFileName(publicName)
+    override suspend fun exportFileToDownloads(
+        file: File,
+        publicName: String,
+        mimeType: String,
+        extension: String
+    ): Result<String> = withContext(ioDispatcher) {
+        runCatching {
+            val safeName = sanitizeFileName(publicName, extension)
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    val contentValues = ContentValues().apply {
-                        put(MediaStore.MediaColumns.DISPLAY_NAME, safeName)
-                        put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
-                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-                    }
-
-                    val uri = contentResolver.insert(
-                        MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-                        contentValues
-                    ) ?: throw IOException("Failed to create new MediaStore record.")
-
-                    contentResolver.openOutputStream(uri)?.use { outputStream ->
-                        file.inputStream().use { inputStream ->
-                            inputStream.copyTo(outputStream)
-                        }
-                    } ?: throw IOException("The output stream for URI $uri could not be opened")
-                    uri.toString()
-                } else {
-                    val downloadsDir =
-                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                    if (!downloadsDir.exists()) downloadsDir.mkdirs()
-
-                    val destinationFile = File(downloadsDir, safeName)
-
-                    file.copyTo(destinationFile, overwrite = true)
-
-                    // Notify MediaScanner so the file shows up in Downloads/File Manager immediately
-                    val contentValues = ContentValues().apply {
-                        put(MediaStore.MediaColumns.DISPLAY_NAME, safeName)
-                        put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
-                        put(MediaStore.MediaColumns.DATA, destinationFile.absolutePath)
-                    }
-                    contentResolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
-
-                    Uri.fromFile(destinationFile).toString()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, safeName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
                 }
+
+                val uri = contentResolver.insert(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                    contentValues
+                ) ?: throw IOException("Failed to create new MediaStore record.")
+
+                contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    file.inputStream().use { inputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                } ?: throw IOException("The output stream for URI $uri could not be opened")
+                uri.toString()
+            } else {
+                val downloadsDir =
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                if (!downloadsDir.exists()) downloadsDir.mkdirs()
+
+                val destinationFile = File(downloadsDir, safeName)
+
+                file.copyTo(destinationFile, overwrite = true)
+
+                // Notify MediaScanner so the file shows up in Downloads/File Manager immediately
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, safeName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                    put(MediaStore.MediaColumns.DATA, destinationFile.absolutePath)
+                }
+                contentResolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
+
+                Uri.fromFile(destinationFile).toString()
             }
         }
+    }
+
+    override suspend fun createDocumentImages(
+        document: DocumentModel,
+        documentImages: List<DocumentImage>,
+        png: Boolean
+    ): List<File> = withContext(ioDispatcher) {
+        val exportDir = File(appContext.cacheDir, "export_images/${document.id}")
+            .apply {
+                deleteRecursively()
+                mkdirs()
+            }
+
+        val compressFormat = if (png) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
+        val extension = if (png) ".png" else ".jpg"
+
+        if (document.isIncomingPdf) {
+            val pdfFile = getPDFFile(StorageType.PERSISTENT, document.id)
+            val pageCount = pdfRenderHelper.getPageCount(pdfFile).getOrDefault(0)
+
+            (0 until pageCount).mapNotNull { index ->
+                val bitmap = pdfRenderHelper.renderPageToBitmap(
+                    file = pdfFile,
+                    pageIndex = index,
+                    width = PDF_EXPORT_MAX_WIDTH
+                ) ?: return@mapNotNull null
+
+                val file = File(exportDir, "page_${index + 1}$extension")
+                FileOutputStream(file).use { output ->
+                    bitmap.compress(compressFormat, IMAGE_EXPORT_QUALITY, output)
+                }
+                bitmap.recycle()
+
+                file
+            }
+        } else {
+            documentImages.mapIndexedNotNull { index, documentImage ->
+                val sourceFile = getImageFile(
+                    storageType = StorageType.PERSISTENT,
+                    documentId = document.id,
+                    imageId = documentImage.id
+                )
+
+                if (!sourceFile.exists()) return@mapIndexedNotNull null
+
+                val bitmap = imageTransformationHelper.transform(
+                    file = sourceFile,
+                    rotation = documentImage.rotation.toInt(),
+                    cropData = documentImage.crop,
+                    filter = ImageFilterType.fromId(documentImage.filter.toInt()),
+                    reqSize = 0 // Full resolution on export
+                )?.bitmap ?: return@mapIndexedNotNull null
+
+                val file = File(exportDir, "page_${index + 1}$extension")
+                FileOutputStream(file).use { output ->
+                    bitmap.compress(compressFormat, IMAGE_EXPORT_QUALITY, output)
+                }
+                bitmap.recycle()
+
+                file
+            }
+        }
+    }
 
     override suspend fun getExifRotation(file: File): Int =
         imageTransformationHelper.getExifRotation(file)
@@ -431,10 +497,23 @@ class FileRepositoryImpl(
     }
 
     /**
-     * Sanitizes a file name by removing invalid characters.
+     * Sanitizes a file name by removing invalid characters and ensuring the
+     * requested [extension] is present.
      */
-    private fun sanitizeFileName(name: String): String {
+    private fun sanitizeFileName(name: String, extension: String): String {
         val cleanName = name.replace("[\\\\/:*?\"<>|]".toRegex(), "_")
-        return if (cleanName.endsWith(".pdf", ignoreCase = true)) cleanName else "$cleanName.pdf"
+        return if (cleanName.endsWith(extension, ignoreCase = true)) {
+            cleanName
+        } else {
+            "$cleanName$extension"
+        }
+    }
+
+    private companion object {
+        /** Max width used when rendering PDF pages for the image export. */
+        const val PDF_EXPORT_MAX_WIDTH = 2480
+
+        /** Quality used when exporting JPG images. */
+        const val IMAGE_EXPORT_QUALITY = 90
     }
 }

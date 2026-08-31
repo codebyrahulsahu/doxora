@@ -52,6 +52,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FabPosition
@@ -115,6 +117,7 @@ import es.pile.DocumentModel
 import es.pile.PileModel
 import es.pile.R
 import es.pile.core.domain.models.DocumentDetail
+import es.pile.core.domain.models.DocumentExportFormat
 import es.pile.core.domain.models.StringDetail
 import es.pile.core.ui.composables.AlertNewPile
 import es.pile.core.ui.composables.LoadingAlert
@@ -169,6 +172,7 @@ fun DocumentDetailScreen(
             bitmapCache = bitmapCache,
             onEvent = { viewModel.handleEvent(it) },
             onRemoveDocumentLock = { pin -> viewModel.removeDocumentLock(pin) },
+            onExportDocument = { format -> viewModel.handleEvent(DocumentDetailEvent.OnExportDocument(format)) },
             navigateToPileDetail = navigateToPileDetail,
             navigateToEditDocument = navigateToEditDocument,
             popBackStack = popBackStack
@@ -208,6 +212,7 @@ fun DocumentDetailPreview() {
             bitmapCache = emptyMap(),
             onEvent = {},
             onRemoveDocumentLock = { true },
+            onExportDocument = {},
             navigateToPileDetail = {},
             navigateToEditDocument = {},
             popBackStack = {}
@@ -223,6 +228,7 @@ private fun DocumentDetailContent(
     bitmapCache: Map<String, Bitmap>,
     onEvent: (DocumentDetailEvent) -> Unit,
     onRemoveDocumentLock: suspend (pin: String) -> Boolean,
+    onExportDocument: (DocumentExportFormat) -> Unit = {},
     navigateToPileDetail: (pileId: String) -> Unit,
     navigateToEditDocument: (documentId: String) -> Unit,
     popBackStack: () -> Unit,
@@ -254,11 +260,25 @@ private fun DocumentDetailContent(
 
     val context = LocalContext.current
 
+    var pendingExportFormat by rememberSaveable { mutableStateOf<DocumentExportFormat?>(null) }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
+        val format = pendingExportFormat ?: return@rememberLauncherForActivityResult
+
         if (isGranted) {
-            onEvent(DocumentDetailEvent.OnDownload)
+            onExportDocument(format)
+            pendingExportFormat = null
+        }
+    }
+
+    fun requestExport(format: DocumentExportFormat) {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            pendingExportFormat = format
+            permissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            onExportDocument(format)
         }
     }
 
@@ -316,15 +336,10 @@ private fun DocumentDetailContent(
                         focusManager.clearFocus()
                         showDeleteDocumentAlert = true
                     },
-                    onDownloadDocument = {
+                    onExportDocument = { format ->
                         onEvent(DocumentDetailEvent.OnUpdateEditingMode(false))
                         focusManager.clearFocus()
-
-                        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-                            permissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                        } else {
-                            onEvent(DocumentDetailEvent.OnDownload)
-                        }
+                        requestExport(format)
                     },
                     onShareDocument = {
                         onEvent(DocumentDetailEvent.OnUpdateEditingMode(false))
@@ -1143,10 +1158,12 @@ private fun ToolBar(
     showEditDocument: Boolean,
     onRenameDocument: () -> Unit,
     onDeleteDocument: () -> Unit,
-    onDownloadDocument: () -> Unit,
+    onExportDocument: (DocumentExportFormat) -> Unit,
     onShareDocument: () -> Unit,
     onEditDocument: () -> Unit
 ) {
+    var exportMenuExpanded by rememberSaveable { mutableStateOf(false) }
+
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1168,11 +1185,40 @@ private fun ToolBar(
                         contentDescription = stringResource(R.string.delete_document)
                     )
                 }
-                IconButton(onClick = onDownloadDocument) {
-                    Icon(
-                        painter = painterResource(R.drawable.download_24px),
-                        contentDescription = stringResource(R.string.save_document)
-                    )
+                Box {
+                    IconButton(onClick = { exportMenuExpanded = true }) {
+                        Icon(
+                            painter = painterResource(R.drawable.download_24px),
+                            contentDescription = stringResource(R.string.export_choice)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = exportMenuExpanded,
+                        onDismissRequest = { exportMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.export_as_pdf)) },
+                            onClick = {
+                                exportMenuExpanded = false
+                                onExportDocument(DocumentExportFormat.PDF)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.export_as_jpg)) },
+                            onClick = {
+                                exportMenuExpanded = false
+                                onExportDocument(DocumentExportFormat.JPG)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.export_as_png)) },
+                            onClick = {
+                                exportMenuExpanded = false
+                                onExportDocument(DocumentExportFormat.PNG)
+                            }
+                        )
+                    }
                 }
                 IconButton(onClick = onShareDocument) {
                     Icon(

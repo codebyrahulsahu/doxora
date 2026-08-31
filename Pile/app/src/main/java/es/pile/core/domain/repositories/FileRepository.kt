@@ -198,9 +198,35 @@ interface FileRepository {
      *
      * @param file The source [File] to be exported.
      * @param publicName The name the file will have in the public storage.
+     * @param mimeType MIME type stored with the file (default: PDF).
+     * @param extension File extension appended when missing (default: .pdf).
      * @return A [Result] indicating the final name of the file or a failure.
      */
-    suspend fun exportFileToDownloads(file: File, publicName: String): Result<String>
+    suspend fun exportFileToDownloads(
+        file: File,
+        publicName: String,
+        mimeType: String = "application/pdf",
+        extension: String = ".pdf"
+    ): Result<String>
+
+    /**
+     * Creates one image file per document page/scan in the cache folder, ready
+     * to be exported to Downloads.
+     *
+     * For incoming PDFs every page is rendered from the PDF; for scanned
+     * documents the stored images are used with their rotation, crop and
+     * filter applied. Full resolution is used for both.
+     *
+     * @param document The document to export.
+     * @param documentImages Image metadata of a scanned document (ignored for incoming PDFs).
+     * @param png true to produce PNG files, false for JPG.
+     * @return The generated files, ordered by page.
+     */
+    suspend fun createDocumentImages(
+        document: DocumentModel,
+        documentImages: List<DocumentImage>,
+        png: Boolean
+    ): List<File>
 
     /**
      * Retrieves the rotation degrees of an image from its physical [File].

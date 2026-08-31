@@ -64,6 +64,13 @@ data class DocumentLockBackup(
 )
 
 @Serializable
+data class TrashEntryBackup(
+    val documentId: String,
+    val trashedAt: String,
+    val originalStatus: Int
+)
+
+@Serializable
 data class DocumentFileBackup(
     val documentId: String,
     val relativePath: String,
@@ -85,5 +92,6 @@ data class BackupPayload(
     val favorites: List<FavoriteBackup> = emptyList(),
     val documentTexts: List<DocumentTextBackup> = emptyList(),
     val documentLocks: List<DocumentLockBackup> = emptyList(),
+    val trashEntries: List<TrashEntryBackup> = emptyList(),
     val files: List<DocumentFileBackup> = emptyList()
 )

@@ -303,6 +303,27 @@ SELECT * FROM DocumentLock;
 removeDocumentLock:
 DELETE FROM DocumentLock WHERE documentId = ?;
 
+-- TrashEntry (Recycle Bin, documents waiting to be permanently deleted)
+
+CREATE TABLE IF NOT EXISTS TrashEntry(
+    documentId      TEXT                         PRIMARY KEY,
+    trashedAt       TEXT AS LocalDateTime        NOT NULL,
+    originalStatus  INTEGER AS DocumentStatus    NOT NULL
+);
+
+insertTrashEntry:
+INSERT OR REPLACE INTO TrashEntry(documentId, trashedAt, originalStatus) VALUES (?, ?, ?);
+
+selectAllTrashEntries:
+SELECT * FROM TrashEntry
+ORDER BY trashedAt DESC;
+
+selectTrashEntry:
+SELECT * FROM TrashEntry WHERE documentId = ?;
+
+removeTrashEntry:
+DELETE FROM TrashEntry WHERE documentId = ?;
+
 -- Local backup restore helpers (INSERT OR REPLACE so restoring twice is safe)
 
 restorePileModel:
@@ -325,3 +346,6 @@ INSERT OR REPLACE INTO DocumentText(documentId, text, updatedAt) VALUES (?, ?, ?
 
 restoreDocumentLock:
 INSERT OR REPLACE INTO DocumentLock(documentId, pinHash, createdAt) VALUES (?, ?, ?);
+
+restoreTrashEntry:
+INSERT OR REPLACE INTO TrashEntry(documentId, trashedAt, originalStatus) VALUES (?, ?, ?);

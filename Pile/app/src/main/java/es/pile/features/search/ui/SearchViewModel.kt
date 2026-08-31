@@ -3,6 +3,7 @@ package es.pile.features.search.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.pile.DocumentModel
+import es.pile.core.domain.models.DocumentStatusConstants.TRASHED
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
 import es.pile.core.domain.repositories.PileModelRepository
@@ -41,7 +42,7 @@ class SearchViewModel(
                     it.copy(
                         isLoading = false,
                         pileList = piles,
-                        documentList = documents,
+                        documentList = documents.filter { it.documentStatus != TRASHED },
                         selectedFilterPiles = if (pileId != null) listOf(pileId) else emptyList()
                     )
                 }

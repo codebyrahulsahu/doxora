@@ -100,6 +100,15 @@ class DocumentModelRepositoryImpl(
         }
     }
 
+    override suspend fun updateStatus(id: String, documentStatus: DocumentStatus) {
+        withContext(ioDispatcher) {
+            databaseQueries.updateDocumentStatus(
+                documentStatus = documentStatus,
+                id = id
+            )
+        }
+    }
+
     override suspend fun deleteDocumentModel(id: String) {
         withContext(ioDispatcher) {
             databaseQueries.removeDocumentModel(id)

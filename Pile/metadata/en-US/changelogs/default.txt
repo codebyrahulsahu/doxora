@@ -4,3 +4,5 @@
 - Per document PIN lock. The global App Lock has been removed.
 - Local Backup & Restore: export your data to a file on your device and restore it later. Cloud Backup has been removed.
 - About & Support now shows the support QR code, Instagram, GitHub and email.
+- Recycle Bin: deleted documents are kept for 30 days and can be restored before they are permanently deleted.
+- Export options: export any document as a PDF file or as JPG/PNG images (one file per page).
