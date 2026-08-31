@@ -227,8 +227,8 @@
     <string name="incorrect_pin">Incorrect PIN, try again</string>
 
     <string name="about_support">About &amp; Support</string>
-    <string name="support_qr_description">Support QR code</string>
-    <string name="support_qr_hint">Scan this QR code to support the project or reach out for help</string>
+    <string name="support_qr_description">Google Pay QR code</string>
+    <string name="support_qr_hint">Scan with Google Pay to support the project</string>
     <string name="instagram">Instagram</string>
     <string name="github">GitHub</string>
     <string name="email">Email</string>
