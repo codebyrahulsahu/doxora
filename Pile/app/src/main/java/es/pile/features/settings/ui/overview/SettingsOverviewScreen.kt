@@ -490,17 +490,11 @@ private fun AboutPileDialog(onDismiss: () -> Unit) {
 
 @Composable
 private fun SupportQrCode(modifier: Modifier = Modifier) {
-    // A local, scannable-looking support marker keeps the page usable offline.
-    // The support destinations are printed beside it for accessibility and copy/paste.
-    androidx.compose.foundation.Canvas(modifier.size(132.dp).clip(RoundedCornerShape(8.dp)).background(Color.White)) {
-        val cells = 21
-        val cell = size.minDimension / cells
-        for (y in 0 until cells) for (x in 0 until cells) {
-            val finder = (x < 7 && y < 7) || (x >= 14 && y < 7) || (x < 7 && y >= 14)
-            val inside = ((x * 31 + y * 17 + x * y) % 5 == 0)
-            if (finder || inside) drawRect(Color.Black, androidx.compose.ui.geometry.Offset(x * cell, y * cell), androidx.compose.ui.geometry.Size(cell, cell))
-        }
-    }
+    androidx.compose.foundation.Image(
+        painter = painterResource(R.drawable.support_qr),
+        contentDescription = stringResource(R.string.support_details),
+        modifier = modifier.size(132.dp).clip(RoundedCornerShape(8.dp))
+    )
 }
 
 @Composable
