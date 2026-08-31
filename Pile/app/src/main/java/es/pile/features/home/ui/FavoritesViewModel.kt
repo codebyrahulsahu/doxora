@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.pile.DocumentModel
 import es.pile.core.domain.models.DocumentCoverItem
-import es.pile.core.domain.models.DocumentStatusConstants
+import es.pile.core.domain.models.DocumentStatusConstants.SAVED
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
@@ -47,7 +47,7 @@ class FavoritesViewModel(
                 val favorites = favoriteIds.toSet()
 
                 documents
-                    .filter { it.id in favorites && it.documentStatus != DocumentStatusConstants.TEMPORARY }
+                    .filter { it.id in favorites && it.documentStatus == SAVED }
                     .map { documentModel ->
                         DocumentCoverItem(
                             document = documentModel,

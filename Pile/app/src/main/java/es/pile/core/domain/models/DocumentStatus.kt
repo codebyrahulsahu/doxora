@@ -5,4 +5,5 @@ typealias DocumentStatus = Int
 object DocumentStatusConstants {
     const val TEMPORARY = 0
     const val SAVED = 1
+    const val TRASHED = 2
 }

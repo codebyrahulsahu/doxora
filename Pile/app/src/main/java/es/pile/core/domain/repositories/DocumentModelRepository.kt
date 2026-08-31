@@ -77,6 +77,11 @@ interface DocumentModelRepository {
     suspend fun updateDetails(id: String, details: List<DocumentDetail>)
 
     /**
+     * Updates the status of a document (temporary, saved or trashed).
+     */
+    suspend fun updateStatus(id: String, documentStatus: DocumentStatus)
+
+    /**
      * Removes a document model record from the database.
      * 
      * @param id The unique identifier of the document to delete.

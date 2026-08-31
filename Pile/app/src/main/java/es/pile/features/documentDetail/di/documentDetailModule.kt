@@ -2,11 +2,12 @@ package es.pile.features.documentDetail.di
 
 import es.pile.features.documentDetail.data.helper.DocumentOpenerImpl
 import es.pile.features.documentDetail.domain.helper.DocumentOpener
-import es.pile.features.documentDetail.domain.useCases.DeleteDocumentUseCase
+import es.pile.features.documentDetail.domain.useCases.MoveDocumentToTrashUseCase
 import es.pile.features.documentDetail.domain.useCases.GetDocumentDetailDataUseCase
 import es.pile.features.documentDetail.domain.useCases.ManageDocumentPileUseCase
 import es.pile.features.documentDetail.domain.useCases.RecognizeDocumentTextUseCase
 import es.pile.features.documentDetail.domain.useCases.UpdateDocumentDetailsUseCase
+import es.pile.features.documentDetail.domain.useCases.export.ExportDocumentImagesUseCase
 import es.pile.features.documentDetail.domain.useCases.export.ExportDocumentUseCase
 import es.pile.features.documentDetail.domain.useCases.export.GeneratePdfUseCase
 import es.pile.features.documentDetail.domain.useCases.export.GetPdfUriUseCase
@@ -20,12 +21,13 @@ val documentDetailModule = module {
     single<DocumentOpener> { DocumentOpenerImpl(get()) }
 
     factoryOf(::UpdateDocumentDetailsUseCase)
-    factoryOf(::DeleteDocumentUseCase)
+    factoryOf(::MoveDocumentToTrashUseCase)
     factoryOf(::GetDocumentDetailDataUseCase)
     factoryOf(::GeneratePdfUseCase)
     factoryOf(::GetPdfUriUseCase)
     factoryOf(::GetUpToDatePdfUseCase)
     factoryOf(::ExportDocumentUseCase)
+    factoryOf(::ExportDocumentImagesUseCase)
     factoryOf(::ManageDocumentPileUseCase)
     factoryOf(::RecognizeDocumentTextUseCase)
 

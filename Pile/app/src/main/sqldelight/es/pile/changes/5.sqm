@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS TrashEntry(
+    documentId      TEXT                         PRIMARY KEY,
+    trashedAt       TEXT AS LocalDateTime        NOT NULL,
+    originalStatus  INTEGER AS DocumentStatus    NOT NULL
+);

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.pile.R
 import es.pile.core.domain.models.DocumentDetail
+import es.pile.core.domain.models.DocumentExportFormat
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
@@ -13,11 +14,12 @@ import es.pile.core.domain.useCases.CreatePileUseCase
 import es.pile.core.domain.useCases.RequestBitmapLoadUseCase
 import es.pile.core.ui.util.UiText
 import es.pile.features.documentDetail.domain.helper.DocumentOpener
-import es.pile.features.documentDetail.domain.useCases.DeleteDocumentUseCase
 import es.pile.features.documentDetail.domain.useCases.GetDocumentDetailDataUseCase
 import es.pile.features.documentDetail.domain.useCases.ManageDocumentPileUseCase
+import es.pile.features.documentDetail.domain.useCases.MoveDocumentToTrashUseCase
 import es.pile.features.documentDetail.domain.useCases.RecognizeDocumentTextUseCase
 import es.pile.features.documentDetail.domain.useCases.UpdateDocumentDetailsUseCase
+import es.pile.features.documentDetail.domain.useCases.export.ExportDocumentImagesUseCase
 import es.pile.features.documentDetail.domain.useCases.export.ExportDocumentUseCase
 import es.pile.features.documentDetail.domain.useCases.export.GetPdfUriUseCase
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +35,7 @@ import kotlinx.coroutines.launch
 class DocumentDetailViewModel(
     private val documentId: String,
     private val requestBitmapLoadUseCase: RequestBitmapLoadUseCase,
-    private val deleteDocumentUseCase: DeleteDocumentUseCase,
+    private val moveDocumentToTrashUseCase: MoveDocumentToTrashUseCase,
     private val updateDocumentDetailsUseCase: UpdateDocumentDetailsUseCase,
     private val getDocumentDetailDataUseCase: GetDocumentDetailDataUseCase,
     private val createPileUseCase: CreatePileUseCase,
@@ -41,6 +43,7 @@ class DocumentDetailViewModel(
     private val getPdfUriUseCase: GetPdfUriUseCase,
     private val documentOpener: DocumentOpener,
     private val exportDocumentUseCase: ExportDocumentUseCase,
+    private val exportDocumentImagesUseCase: ExportDocumentImagesUseCase,
     private val documentModelRepository: DocumentModelRepository,
     private val bitmapCacheRepository: BitmapCacheRepository,
     private val documentTextRepository: DocumentTextRepository,
@@ -120,7 +123,7 @@ class DocumentDetailViewModel(
 
             DocumentDetailEvent.OnOpenDocument -> openPDF()
             DocumentDetailEvent.OnShare -> openShareSheet()
-            DocumentDetailEvent.OnDownload -> downloadPDF()
+            is DocumentDetailEvent.OnExportDocument -> exportDocument(event.format)
 
             DocumentDetailEvent.OnRecognizeText -> recognizeText()
             is DocumentDetailEvent.OnUpdateRecognizedText -> saveRecognizedText(event.newText)
@@ -214,7 +217,7 @@ class DocumentDetailViewModel(
         viewModelScope.launch {
             val documentModel = state.value.documentModel ?: return@launch
 
-            deleteDocumentUseCase(documentModel)
+            moveDocumentToTrashUseCase(documentModel)
         }
     }
 
@@ -303,24 +306,44 @@ class DocumentDetailViewModel(
         }
     }
 
-    private fun downloadPDF() {
+    private fun exportDocument(format: DocumentExportFormat) {
         viewModelScope.launch {
             val document = state.value.documentModel ?: return@launch
             try {
                 _state.update { it.copy(isExporting = true) }
 
-                exportDocumentUseCase(document)
+                when (format) {
+                    DocumentExportFormat.PDF -> {
+                        exportDocumentUseCase(document)
+                        _state.update {
+                            it.copy(
+                                userMessage = UiText.StringResource(R.string.pdf_exported_successfully)
+                            )
+                        }
+                    }
 
-                _state.update {
-                    it.copy(
-                        userMessage = UiText.StringResource(R.string.pdf_exported_successfully)
-                    )
+                    DocumentExportFormat.JPG,
+                    DocumentExportFormat.PNG -> {
+                        val imagesExported = exportDocumentImagesUseCase(document, format)
+                        _state.update {
+                            it.copy(
+                                userMessage = UiText.StringResource(
+                                    R.string.images_exported_successfully,
+                                    imagesExported
+                                )
+                            )
+                        }
+                    }
                 }
             } catch (e: Exception) {
+                val errorMessage = if (format == DocumentExportFormat.PDF) {
+                    R.string.error_exporting_pdf
+                } else {
+                    R.string.error_exporting_images
+                }
+
                 _state.update {
-                    it.copy(
-                        userMessage = UiText.StringResource(R.string.error_exporting_pdf)
-                    )
+                    it.copy(userMessage = UiText.StringResource(errorMessage))
                 }
                 e.printStackTrace()
             } finally {

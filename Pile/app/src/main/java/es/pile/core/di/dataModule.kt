@@ -17,6 +17,7 @@ import es.pile.core.data.repositories.FavoritesRepositoryImpl
 import es.pile.core.data.repositories.LocalBackupRepositoryImpl
 import es.pile.core.data.repositories.MlKitTextRecognitionRepository
 import es.pile.core.data.repositories.PileModelRepositoryImpl
+import es.pile.core.data.repositories.TrashRepositoryImpl
 import es.pile.core.data.util.ImageTransformationHelper
 import es.pile.core.data.util.PdfRenderHelper
 import es.pile.core.domain.models.AppPreferences
@@ -33,6 +34,7 @@ import es.pile.core.domain.repositories.LocalBackupRepository
 import es.pile.core.domain.repositories.PileModelRepository
 import es.pile.core.domain.repositories.SettingsRepository
 import es.pile.core.domain.repositories.TextRecognitionRepository
+import es.pile.core.domain.repositories.TrashRepository
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
@@ -100,6 +102,13 @@ val dataModule = module {
 
     single<TextRecognitionRepository> {
         MlKitTextRecognitionRepository(ioDispatcher = get())
+    }
+
+    single<TrashRepository> {
+        TrashRepositoryImpl(
+            databaseQueries = get(),
+            ioDispatcher = get()
+        )
     }
 
     single<LocalBackupRepository> {

@@ -60,6 +60,10 @@ sealed interface Pane : Parcelable, NavKey {
 
     @Parcelize
     @Serializable
+    data object RecycleBin : Pane
+
+    @Parcelize
+    @Serializable
     data object SettingsOverview : Pane
 
     @Parcelize

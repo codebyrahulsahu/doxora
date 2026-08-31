@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import es.pile.DocumentModel
 import es.pile.R
 import es.pile.core.domain.models.DocumentCoverItem
+import es.pile.core.domain.models.DocumentStatusConstants.SAVED
 import es.pile.core.domain.models.DocumentStatusConstants.TEMPORARY
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentLockRepository
@@ -74,7 +75,7 @@ class PileDetailViewModel(
                 allDocumentsFlow
             ) { pile, allDocuments ->
 
-                val pileDocuments = allDocuments.filter { it.documentPileIds.contains(pileId) && it.documentStatus != TEMPORARY }
+                val pileDocuments = allDocuments.filter { it.documentPileIds.contains(pileId) && it.documentStatus == SAVED }
                 val temporaryDocument = allDocuments.find { it.documentStatus == TEMPORARY }
 
                 val documentCoverItems = pileDocuments.map { documentModel ->

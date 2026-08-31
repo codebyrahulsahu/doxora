@@ -10,6 +10,7 @@ import es.pile.core.data.local.backup.BACKUP_VERSION
 import es.pile.core.data.local.backup.BackupPayload
 import es.pile.core.data.local.backup.DocumentFileBackup
 import es.pile.core.data.local.backup.DocumentImageBackup
+import es.pile.core.data.local.backup.TrashEntryBackup
 import es.pile.core.domain.models.DocumentDetail
 import es.pile.core.domain.models.ImageCropData
 import es.pile.core.domain.models.UserSettings
@@ -57,6 +58,7 @@ class LocalBackupRepositoryImpl(
             val favorites = databaseQueries.selectAllFavoriteDocuments().executeAsList()
             val texts = databaseQueries.selectAllDocumentTexts().executeAsList()
             val locks = databaseQueries.selectAllDocumentLocks().executeAsList()
+            val trashEntries = databaseQueries.selectAllTrashEntries().executeAsList()
 
             val files = mutableListOf<DocumentFileBackup>()
 
@@ -135,6 +137,13 @@ class LocalBackupRepositoryImpl(
                         documentId = it.documentId,
                         pinHash = it.pinHash,
                         createdAt = it.createdAt
+                    )
+                },
+                trashEntries = trashEntries.map {
+                    TrashEntryBackup(
+                        documentId = it.documentId,
+                        trashedAt = it.trashedAt.toString(),
+                        originalStatus = it.originalStatus
                     )
                 },
                 files = files
@@ -288,6 +297,14 @@ class LocalBackupRepositoryImpl(
                         lock.documentId,
                         lock.pinHash,
                         lock.createdAt
+                    )
+                }
+
+                data.trashEntries.forEach { entry ->
+                    databaseQueries.restoreTrashEntry(
+                        entry.documentId,
+                        LocalDateTime.parse(entry.trashedAt),
+                        entry.originalStatus
                     )
                 }
 

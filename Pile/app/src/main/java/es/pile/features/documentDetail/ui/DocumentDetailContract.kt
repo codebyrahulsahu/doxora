@@ -3,6 +3,7 @@ package es.pile.features.documentDetail.ui
 import es.pile.DocumentModel
 import es.pile.PileModel
 import es.pile.core.domain.models.DocumentDetail
+import es.pile.core.domain.models.DocumentExportFormat
 import es.pile.core.ui.util.UiText
 
 
@@ -38,7 +39,7 @@ sealed interface DocumentDetailEvent {
 
     data object OnOpenDocument : DocumentDetailEvent
     data object OnShare : DocumentDetailEvent
-    data object OnDownload : DocumentDetailEvent
+    data class OnExportDocument(val format: DocumentExportFormat) : DocumentDetailEvent
 
     // Text recognition (OCR)
     data object OnRecognizeText : DocumentDetailEvent
