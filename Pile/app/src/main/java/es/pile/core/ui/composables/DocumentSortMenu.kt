@@ -3,11 +3,8 @@ package es.pile.core.ui.composables
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sort
@@ -31,8 +28,11 @@ import es.pile.R
 import es.pile.core.domain.models.DocumentSortOrder
 
 /**
- * A rounded "Sort by Date" chip with a dropdown to choose between the
- * supported [DocumentSortOrder] options.
+ * A round icon-only sort chip with a dropdown to choose between the supported
+ * [DocumentSortOrder] options.
+ *
+ * The "Sort" label is hidden: only the icon is shown (the text is still
+ * available to accessibility services as the content description).
  */
 @Composable
 fun DocumentSortMenu(
@@ -43,26 +43,22 @@ fun DocumentSortMenu(
     var expanded by remember { mutableStateOf(false) }
 
     Box(modifier = modifier) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Box(
+            contentAlignment = Alignment.Center,
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
                 .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 .clickable { expanded = true }
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .padding(8.dp)
         ) {
             Icon(
                 imageVector = Icons.Filled.Sort,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.sort_documents),
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(17.dp)
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = stringResource(R.string.sort_by_date),
-                style = MaterialTheme.typography.labelMedium
+                modifier = Modifier.size(20.dp)
             )
         }
+
 
         DropdownMenu(
             expanded = expanded,

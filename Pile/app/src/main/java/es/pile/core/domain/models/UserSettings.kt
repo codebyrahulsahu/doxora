@@ -15,4 +15,11 @@ data class UserSettings(
     val profilePicturePath: String? = null,
     /** Layout used to show the documents in the main screen. */
     val documentViewMode: DocumentViewMode = DocumentViewMode.LIST,
+    /**
+     * Profile picture of every hub, mapped by hub id.
+     *
+     * The value is the file name (inside the app's internal storage) of the
+     * picture uploaded for the person that hub belongs to.
+     */
+    val hubPicturePaths: Map<String, String> = emptyMap(),
 )

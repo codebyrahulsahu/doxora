@@ -4,9 +4,11 @@ import android.net.Uri
 import es.pile.DocumentModel
 import es.pile.PileModel
 import es.pile.core.domain.models.DocumentCoverItem
+import es.pile.core.domain.models.DocumentExportFormat
 import es.pile.core.domain.models.DocumentSortOrder
 import es.pile.core.domain.models.DocumentViewMode
 import es.pile.core.ui.util.UiText
+import java.io.File
 
 
 data class HomeState(
@@ -15,6 +17,8 @@ data class HomeState(
     val temporaryDocument: DocumentModel? = null,
     val coloredPileIds: List<String> = emptyList(),
     val pileDocumentCounts: Map<String, Int> = emptyMap(),
+    /** Profile picture uploaded for each hub, mapped by hub id. */
+    val hubPictureFiles: Map<String, File> = emptyMap(),
     val documentSizes: Map<String, Long> = emptyMap(),
     val sortOrder: DocumentSortOrder = DocumentSortOrder.NEWEST,
     val viewMode: DocumentViewMode = DocumentViewMode.LIST,
@@ -51,6 +55,9 @@ sealed interface HomeEvent {
     data object OnCameraClick : HomeEvent
     data object OnCameraUriConsumed : HomeEvent
 
+    /** The built in scanner could not be started, the camera is used instead. */
+    data object OnScannerUnavailable : HomeEvent
+
     data object OnConfirmImport : HomeEvent
     data object OnDismissDraftWarning : HomeEvent
 
@@ -62,7 +69,16 @@ sealed interface HomeEvent {
     data class OnDocumentLongPressed(val documentId: String) : HomeEvent
     data class OnDocumentSelectionToggled(val documentId: String) : HomeEvent
     data object OnSelectionCleared : HomeEvent
-    data object OnExportSelectedClicked : HomeEvent
+    /**
+     * Exports every selected document with the format chosen by the user.
+     *
+     * @param destinationFolderUri Folder granted by the user (only asked once)
+     * or null to fall back to the public Downloads directory.
+     */
+    data class OnExportSelectedClicked(
+        val format: DocumentExportFormat,
+        val destinationFolderUri: Uri? = null
+    ) : HomeEvent
     data object OnShareSelectedClicked : HomeEvent
     data object OnDeleteSelectedClicked : HomeEvent
     data object OnSelectedDocumentsDeleted : HomeEvent

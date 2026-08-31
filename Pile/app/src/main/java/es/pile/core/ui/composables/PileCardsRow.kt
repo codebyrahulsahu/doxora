@@ -43,6 +43,7 @@ import es.pile.core.ui.theme.AppIcons
 import es.pile.core.ui.theme.ExtendedTheme
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import java.io.File
 
 /**
  * Horizontally scrollable row of color-coded hub cards.
@@ -52,6 +53,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
  *
  * @param piles The list of hubs to display.
  * @param pileDocumentCounts Map from hub ID to the number of documents inside it.
+ * @param pilePictureFiles Map from hub ID to the profile picture uploaded for it.
  * @param onPileClick Invoked with the id of the clicked hub.
  * @param onNewPileClick Invoked when the "New Hub" card is tapped.
  * @param onPilesReordered Invoked with the ids of the hubs ordered by their new position.
@@ -61,6 +63,7 @@ fun PileCardsRow(
     modifier: Modifier = Modifier,
     piles: List<PileModel>,
     pileDocumentCounts: Map<String, Int>,
+    pilePictureFiles: Map<String, File> = emptyMap(),
     onPileClick: (String) -> Unit,
     onNewPileClick: () -> Unit,
     onPilesReordered: (List<String>) -> Unit = {}
@@ -92,6 +95,7 @@ fun PileCardsRow(
                 PileCard(
                     pileModel = pile,
                     documentCount = pileDocumentCounts[pile.id] ?: 0,
+                    pictureFile = pilePictureFiles[pile.id],
                     onClick = { onPileClick(pile.id) },
                     isDragging = isDragging,
                     modifier = Modifier
@@ -119,6 +123,7 @@ fun PileCard(
     pileModel: PileModel,
     documentCount: Int,
     onClick: () -> Unit,
+    pictureFile: File? = null,
     modifier: Modifier = Modifier,
     isDragging: Boolean = false
 ) {
@@ -152,19 +157,31 @@ fun PileCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(11.dp))
-                    .background(contentColor.copy(alpha = 0.14f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(AppIcons.getById(pileModel.iconId)),
+            if (pictureFile != null) {
+                // Hubs with an uploaded profile picture show the person instead
+                // of the generic hub icon.
+                PictureAvatar(
+                    pictureFile = pictureFile,
                     contentDescription = null,
-                    tint = contentColor,
-                    modifier = Modifier.size(21.dp)
+                    size = 38.dp,
+                    containerColor = contentColor.copy(alpha = 0.14f),
+                    contentColor = contentColor
                 )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(contentColor.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(AppIcons.getById(pileModel.iconId)),
+                        contentDescription = null,
+                        tint = contentColor,
+                        modifier = Modifier.size(21.dp)
+                    )
+                }
             }
 
             Column(modifier = Modifier.fillMaxWidth()) {

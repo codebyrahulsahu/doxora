@@ -78,4 +78,17 @@ class DataStoreSettingsRepository(
             dataStore.updateData { it.copy(profilePicturePath = path) }
         }
     }
+
+    override suspend fun updateHubPicturePath(hubId: String, path: String?) {
+        withContext(ioDispatcher) {
+            dataStore.updateData { settings ->
+                val updatedPictures = settings.hubPicturePaths.toMutableMap()
+
+                if (path == null) updatedPictures.remove(hubId)
+                else updatedPictures[hubId] = path
+
+                settings.copy(hubPicturePaths = updatedPictures)
+            }
+        }
+    }
 }

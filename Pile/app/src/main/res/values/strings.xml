@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Doxora</string>
 
-    <string name="your_piles">Your Piles</string>
+    <string name="your_piles">Your Hubs</string>
     <string name="all_documents">All Documents</string>
     <string name="search_your_documents">Search your Documents</string>
     <string name="user_document_unsaved_changes">You have a document with unsaved changes.</string>
@@ -16,6 +16,7 @@
     <!-- Document view options -->
     <string name="list_view">List View</string>
     <string name="icon_view">Icon View</string>
+    <string name="sort_documents">Sort documents</string>
 
     <!-- Multi selection actions -->
     <string name="documents_selected">%1$d selected</string>
@@ -65,7 +66,7 @@
     <string name="loading_new_document">Loading new document</string>
 
     <string name="add_document">Add Document</string>
-    <string name="add_to_piles">Add to piles</string>
+    <string name="add_to_piles">Add to Hubs</string>
     <string name="change_document_title">Change document title</string>
     <string name="delete_document">Delete document</string>
     <string name="save_document">Save document</string>
@@ -82,7 +83,7 @@
     <string name="save_changes_in_document_section_name">Save changes in document section %1$s</string>
 
     <string name="add_a_note">Add a note…</string>
-    <string name="no_piles_in_document">No piles selected</string>
+    <string name="no_piles_in_document">No hubs selected</string>
     <string name="no_document_details">No document details</string>
     <string name="add_a_detail">Add a detail</string>
     <string name="detail_hint_title">Detail</string>
@@ -94,7 +95,7 @@
     <string name="detail_deleted">Detail deleted</string>
     <string name="delete_detail">Delete detail</string>
     <string name="no_piles_saved">You haven\'t created any hubs yet. Create your Hub to start organizing your documents!</string>
-    <string name="no_documents_in_pile">This pile is empty, start by adding some documents to it!</string>
+    <string name="no_documents_in_pile">This hub is empty, start by adding some documents to it!</string>
     <string name="no_documents_home">You haven\'t added any documents yet. Tap the button below to start!</string>
     <string name="no_search_results">No results were found for your search. Please try adjusting your filters or query.</string>
 
@@ -114,13 +115,27 @@
     <string name="export_as_png">Export as PNG</string>
     <string name="images_exported_successfully">%1$d images exported successfully</string>
     <string name="error_exporting_images">Error exporting the images</string>
+    <string name="documents_exported_to_folder">%1$d documents exported</string>
+
+    <!-- Built in document scanner -->
+    <string name="scanner_unavailable">The scanner is not available, opening the camera</string>
+
+    <!-- Hub picture -->
+    <string name="hub_picture">Hub picture</string>
+    <string name="upload_hub_picture">Upload a profile picture</string>
+    <string name="hub_picture_hint">Add the picture of the person this hub belongs to.</string>
+    <string name="remove_hub_picture">Remove hub picture</string>
+    <string name="hub_picture_updated">Hub picture updated</string>
+    <string name="hub_picture_removed">Hub picture removed</string>
+    <string name="saving_hub_picture">Saving the hub picture…</string>
+    <string name="error_setting_hub_picture">Error setting the hub picture</string>
 
     <string name="draft_warning_title">Unsaved Document</string>
     <string name="draft_warning_body">You have an unsaved document. Creating a new one will discard the current draft. Do you want to continue or go back to editing the draft?</string>
     <string name="draft_warning_navigate">Edit Draft</string>
     <string name="draft_warning_discard">Discard and Continue</string>
 
-    <string name="piles">Piles</string>
+    <string name="piles">Hubs</string>
     <string name="note">Note</string>
     <string name="details">Details</string>
 
@@ -149,7 +164,7 @@
     <string name="reset_image_crop">Reset image crop</string>
     <string name="error_loading_crop_controller">Error loading crop editor</string>
 
-    <string name="close_pile_selection_bottom_sheet">Close pile selection bottom sheet</string>
+    <string name="close_pile_selection_bottom_sheet">Close hub selection bottom sheet</string>
 
     <string name="discard_changes">Discard changes?</string>
     <string name="discard_changes_body">Your changes are not saved</string>
@@ -161,9 +176,9 @@
     <string name="close_menu">Close menu</string>
 
     <string name="edit_pile">Edit Hub</string>
-    <string name="delete_pile">Delete Pile</string>
-    <string name="delete_pile_alert_title">Delete Pile?</string>
-    <string name="delete_pile_alert_body">Documents will remain, but this pile will be removed from them.</string>
+    <string name="delete_pile">Delete Hub</string>
+    <string name="delete_pile_alert_title">Delete Hub?</string>
+    <string name="delete_pile_alert_body">Documents will remain, but this hub will be removed from them.</string>
 
 
     <string name="no_images_found">No images were found.</string>
@@ -194,7 +209,7 @@
     <string name="local_backup_restore">Local Backup &amp; Restore</string>
     <string name="local_backup_restore_body">Export your data to a file on this device, or restore it later.</string>
     <string name="export_backup">Export backup</string>
-    <string name="export_backup_body">Save every pile, document, favorite and setting into a single file on this device.</string>
+    <string name="export_backup_body">Save every hub, document, favorite and setting into a single file on this device.</string>
     <string name="restore_backup">Restore backup</string>
     <string name="restore_backup_body">Read back a backup file stored on this device and merge it into the app.</string>
     <string name="working_on_backup">Working on your backup…</string>
@@ -289,8 +304,8 @@ Email: %3$s</string>
 
     <string name="onboarding_welcome_title">Welcome to Doxora</string>
     <string name="onboarding_welcome_description">Centralized document management, designed to make your personal files easier to organize.</string>
-    <string name="onboarding_piles_title">Organize with Piles</string>
-    <string name="onboarding_piles_description">Featuring a unique tag-based system called Piles! Group your documents in a way that makes sense to you.</string>
+    <string name="onboarding_piles_title">Organize with Hubs</string>
+    <string name="onboarding_piles_description">Featuring a unique tag-based system called Hubs! Group your documents in a way that makes sense to you.</string>
     <string name="onboarding_pdf_title">Full PDF Support</string>
     <string name="onboarding_pdf_description">Import, view and manage your PDF files seamlessly within the app.</string>
     <string name="onboarding_privacy_title">Privacy First</string>

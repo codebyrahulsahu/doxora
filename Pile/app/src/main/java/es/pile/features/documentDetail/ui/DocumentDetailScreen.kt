@@ -2,8 +2,6 @@ package es.pile.features.documentDetail.ui
 
 import android.graphics.Bitmap
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -52,8 +50,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FabPosition
@@ -120,11 +116,13 @@ import es.pile.core.domain.models.DocumentDetail
 import es.pile.core.domain.models.DocumentExportFormat
 import es.pile.core.domain.models.StringDetail
 import es.pile.core.ui.composables.AlertNewPile
+import es.pile.core.ui.composables.ExportFormatMenu
 import es.pile.core.ui.composables.LoadingAlert
 import es.pile.core.ui.composables.LoadingWrapper
 import es.pile.core.ui.composables.Pile
 import es.pile.core.ui.composables.SelectPilesBottomSheet
 import es.pile.core.ui.composables.SwipeBox
+import es.pile.core.ui.controllers.rememberExportDestinationController
 import es.pile.core.ui.theme.PileTheme
 import es.pile.features.documentDetail.ui.composables.DocumentLockContent
 import es.pile.features.documentDetail.ui.composables.DocumentTextSection
@@ -264,24 +262,11 @@ private fun DocumentDetailContent(
 
     val context = LocalContext.current
 
-    // The export options are only revealed when the Export button is tapped:
-    // the chosen format is stored while the user picks the destination folder.
-    var pendingExportFormat by rememberSaveable { mutableStateOf<DocumentExportFormat?>(null) }
-
-    val folderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { folderUri ->
-        val format = pendingExportFormat ?: return@rememberLauncherForActivityResult
-        pendingExportFormat = null
-
-        if (folderUri != null) {
-            onExportDocument(format, folderUri)
-        }
-    }
-
-    fun requestExport(format: DocumentExportFormat) {
-        pendingExportFormat = format
-        folderPickerLauncher.launch(null)
+    // The export options are only revealed when the Export button is tapped.
+    // The destination folder is requested once (right after the format is
+    // chosen) and reused for every later export.
+    val exportActions = rememberExportDestinationController { format, folderUri ->
+        onExportDocument(format, folderUri)
     }
 
     LaunchedEffect(state.userMessage) {
@@ -315,7 +300,7 @@ private fun DocumentDetailContent(
                 onExportDocument = { format ->
                     onEvent(DocumentDetailEvent.OnUpdateEditingMode(false))
                     focusManager.clearFocus()
-                    requestExport(format)
+                    exportActions.requestExport(format)
                 },
                 isLocked = state.isLocked,
                 onLockClick = {
@@ -609,32 +594,11 @@ private fun ScreenTopAppBar(
                     )
                 }
 
-                DropdownMenu(
+                ExportFormatMenu(
                     expanded = exportMenuExpanded,
-                    onDismissRequest = { exportMenuExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.export_as_pdf)) },
-                        onClick = {
-                            exportMenuExpanded = false
-                            onExportDocument(DocumentExportFormat.PDF)
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.export_as_jpg)) },
-                        onClick = {
-                            exportMenuExpanded = false
-                            onExportDocument(DocumentExportFormat.JPG)
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.export_as_png)) },
-                        onClick = {
-                            exportMenuExpanded = false
-                            onExportDocument(DocumentExportFormat.PNG)
-                        }
-                    )
-                }
+                    onDismissRequest = { exportMenuExpanded = false },
+                    onFormatSelected = onExportDocument
+                )
             }
 
             IconButton(onClick = onLockClick) {

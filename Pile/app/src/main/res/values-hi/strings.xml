@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Doxora</string>
 
-    <string name="your_piles">आपके ढेर</string>
+    <string name="your_piles">आपके हब</string>
     <string name="all_documents">सभी दस्तावेज़</string>
     <string name="search_your_documents">दस्तावेज़ खोजें</string>
     <string name="user_document_unsaved_changes">आपके पास एक दस्तावेज़ है जिसमें बिना सहेजे गए बदलाव हैं।</string>

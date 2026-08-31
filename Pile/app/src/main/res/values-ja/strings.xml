@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Doxora</string>
 
-    <string name="your_piles">あなたのパイル（積み重ね）</string>
+    <string name="your_piles">あなたのハブ</string>
     <string name="all_documents">すべてのドキュメント</string>
     <string name="search_your_documents">ドキュメントを検索</string>
     <string name="user_document_unsaved_changes">保存されていない変更があるドキュメントがあります。</string>

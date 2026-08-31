@@ -89,4 +89,13 @@ interface SettingsRepository {
      * storage, or null to remove the current picture.
      */
     suspend fun updateProfilePicturePath(path: String?)
+
+    /**
+     * Updates the profile picture uploaded for a hub.
+     *
+     * @param hubId Id of the hub the picture belongs to.
+     * @param path File name of the stored picture inside the app's internal
+     * storage, or null to remove the current hub picture.
+     */
+    suspend fun updateHubPicturePath(hubId: String, path: String?)
 }

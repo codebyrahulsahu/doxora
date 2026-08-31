@@ -2,6 +2,10 @@ package es.pile.features.pileDetail.ui
 
 import android.graphics.Bitmap
 import android.view.MotionEvent
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -24,6 +28,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -63,14 +70,21 @@ import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentSortOrder
 import es.pile.core.ui.composables.AlertDraftDocumentWarning
 import es.pile.core.ui.composables.AlertEditPile
+import es.pile.core.ui.composables.DocumentSelectionTopBar
 import es.pile.core.ui.composables.DocumentSortMenu
 import es.pile.core.ui.composables.LoadingAlert
 import es.pile.core.ui.composables.LoadingWrapper
+import es.pile.core.ui.composables.PictureAvatar
 import es.pile.core.ui.composables.itemDocumentsVerticalList
 import es.pile.core.ui.controllers.rememberDocumentImportController
+import es.pile.core.ui.controllers.rememberExportDestinationController
 import es.pile.core.ui.theme.ExtendedTheme
 import es.pile.core.ui.theme.PileTheme
+import es.pile.features.home.ui.FabMenuAction
 import es.pile.features.home.ui.FabMenuWithController
+import es.pile.features.settings.ui.composables.ItemPosition
+import es.pile.features.settings.ui.composables.SettingsItem
+import java.io.File
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -208,42 +222,97 @@ fun PileDetailContent(
     var isUpdatePileExpanded by rememberSaveable { mutableStateOf(false) }
     var isDeletePileExpanded by rememberSaveable { mutableStateOf(false) }
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    var showHubPictureOptions by rememberSaveable { mutableStateOf(false) }
+    var showDeleteSelectionAlert by rememberSaveable { mutableStateOf(false) }
 
     val importActions = rememberDocumentImportController(
         cameraUri = state.cameraUri,
         onUriConsumed = { onEvent(PileDetailEvent.OnCameraUriConsumed) },
         onPdfSelected = { onEvent(PileDetailEvent.OnPdfImported(it)) },
         onImagesSelected = { onEvent(PileDetailEvent.OnImagesImported(it)) },
-        onCameraClick = { onEvent(PileDetailEvent.OnCameraClick) }
+        onCameraClick = { onEvent(PileDetailEvent.OnCameraClick) },
+        onScannerError = { onEvent(PileDetailEvent.OnScannerUnavailable) }
     )
+
+    // Export: the format is picked first and the folder is only requested once.
+    val exportActions = rememberExportDestinationController { format, folderUri ->
+        onEvent(PileDetailEvent.OnExportSelectedClicked(format, folderUri))
+    }
+
+    val hubPictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let { onEvent(PileDetailEvent.OnHubPicturePicked(it)) }
+    }
+
+    val launchHubPicturePicker = {
+        hubPictureLauncher.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        )
+    }
+
+    // Tapping a document toggles its selection while the selection mode is on.
+    val onDocumentClicked: (String) -> Unit = { documentId ->
+        if (state.isSelectionMode) {
+            onEvent(PileDetailEvent.OnDocumentSelectionToggled(documentId))
+        } else {
+            navigateToDocumentDetail(documentId)
+        }
+    }
+
+    BackHandler(enabled = state.isSelectionMode) {
+        onEvent(PileDetailEvent.OnSelectionCleared)
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets.displayCutout,
         modifier = modifier,
         topBar = {
-            state.pile?.let { pileModel ->
-                TopAppBar(
-                    pileModel = pileModel,
-                    documentCount = state.documentCoverItems.size,
-                    popBackStack = popBackStack,
-                    onSearchClick = navigateToSearchScreen,
-                    onEditClick = { isUpdatePileExpanded = true },
-                    onDeleteClick = { isDeletePileExpanded = true }
+            if (state.isSelectionMode) {
+                DocumentSelectionTopBar(
+                    selectedCount = state.selectedDocumentIds.size,
+                    enabled = !state.isSelectionWorking,
+                    onClose = { onEvent(PileDetailEvent.OnSelectionCleared) },
+                    onExportFormatSelected = { format -> exportActions.requestExport(format) },
+                    onShare = { onEvent(PileDetailEvent.OnShareSelectedClicked) },
+                    onDelete = { showDeleteSelectionAlert = true }
                 )
+            } else {
+                state.pile?.let { pileModel ->
+                    TopAppBar(
+                        pileModel = pileModel,
+                        documentCount = state.documentCoverItems.size,
+                        hubPictureFile = state.hubPictureFile,
+                        popBackStack = popBackStack,
+                        onSearchClick = navigateToSearchScreen,
+                        onPictureClick = { showHubPictureOptions = true },
+                        onEditClick = { isUpdatePileExpanded = true },
+                        onDeleteClick = { isDeletePileExpanded = true }
+                    )
+                }
             }
         },
         floatingActionButtonPosition = FabPosition.End,
         floatingActionButton = {
             AnimatedVisibility(
-                visible = !state.isLoading,
+                visible = !state.isLoading && !state.isSelectionMode,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
+                // The "+" button keeps every import action and adds the option to
+                // upload the profile picture of the person this hub belongs to.
+                val hubPictureAction = FabMenuAction(
+                    icon = rememberVectorPainter(Icons.Filled.PhotoLibrary),
+                    label = stringResource(R.string.upload_hub_picture),
+                    action = { showHubPictureOptions = true }
+                )
+
                 FabMenuWithController(
                     modifier = Modifier.padding(WindowInsets.navigationBars.asPaddingValues()),
                     fabMenuExpanded = fabMenuExpanded,
                     updateFabMenuExpanded = { fabMenuExpanded = it },
-                    importActions = importActions
+                    importActions = importActions,
+                    extraActions = listOf(hubPictureAction)
                 )
             }
         },
@@ -325,7 +394,11 @@ fun PileDetailContent(
                             bitmapCache = bitmapCache,
                             onLoadBitmap = { onEvent(PileDetailEvent.OnImageDisplayed(it)) },
                             lockedDocumentIds = state.lockedDocumentIds,
-                            onDocumentClick = navigateToDocumentDetail,
+                            selectedDocumentIds = state.selectedDocumentIds,
+                            onDocumentClick = onDocumentClicked,
+                            onDocumentLongPress = { documentId ->
+                                onEvent(PileDetailEvent.OnDocumentLongPressed(documentId))
+                            },
                             favoriteDocumentIds = state.favoriteDocumentIds,
                             onFavoriteToggle = { onEvent(PileDetailEvent.OnFavoriteToggled(it)) }
                         )
@@ -340,6 +413,60 @@ fun PileDetailContent(
             if (state.isLoadingNewDocument || isNavigating) {
                 LoadingAlert(title = stringResource(R.string.loading_new_document))
             }
+        }
+
+        if (state.isSelectionWorking) {
+            LoadingAlert(title = stringResource(R.string.preparing_documents))
+        }
+
+        if (state.isWorkingOnHubPicture) {
+            LoadingAlert(title = stringResource(R.string.saving_hub_picture))
+        }
+
+        if (showDeleteSelectionAlert) {
+            AlertDialog(
+                onDismissRequest = { showDeleteSelectionAlert = false },
+                title = {
+                    Text(
+                        stringResource(
+                            R.string.delete_documents_alert_title,
+                            state.selectedDocumentIds.size
+                        )
+                    )
+                },
+                text = { Text(stringResource(R.string.delete_documents_alert_body)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDeleteSelectionAlert = false
+                        onEvent(PileDetailEvent.OnDeleteSelectedClicked)
+                    }) {
+                        Text(
+                            stringResource(R.string.delete),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteSelectionAlert = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            )
+        }
+
+        if (showHubPictureOptions) {
+            HubPictureOptionsDialog(
+                hasPicture = state.hubPictureFile != null,
+                onDismiss = { showHubPictureOptions = false },
+                onChooseFromGallery = {
+                    showHubPictureOptions = false
+                    launchHubPicturePicker()
+                },
+                onRemove = {
+                    showHubPictureOptions = false
+                    onEvent(PileDetailEvent.OnHubPictureRemoved)
+                }
+            )
         }
 
         if (isUpdatePileExpanded) {
@@ -397,8 +524,10 @@ private fun TopAppBar(
     modifier: Modifier = Modifier,
     pileModel: PileModel,
     documentCount: Int,
+    hubPictureFile: File? = null,
     popBackStack: () -> Unit,
     onSearchClick: () -> Unit,
+    onPictureClick: () -> Unit = {},
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
@@ -429,6 +558,16 @@ private fun TopAppBar(
                     tint = contentColor
                 )
             }
+
+            PictureAvatar(
+                pictureFile = hubPictureFile,
+                contentDescription = stringResource(R.string.hub_picture),
+                size = 40.dp,
+                containerColor = contentColor.copy(alpha = 0.14f),
+                contentColor = contentColor,
+                onClick = onPictureClick,
+                modifier = Modifier.padding(end = 10.dp)
+            )
 
             Column(Modifier.weight(1f)) {
                 Text(
@@ -498,6 +637,65 @@ private fun AlertDeletePile(
             }
         },
         dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+/**
+ * Options shown when uploading or removing the profile picture of a hub.
+ */
+@Composable
+private fun HubPictureOptionsDialog(
+    hasPicture: Boolean,
+    onDismiss: () -> Unit,
+    onChooseFromGallery: () -> Unit,
+    onRemove: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.hub_picture)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.hub_picture_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                SettingsItem(
+                    itemPosition = if (hasPicture) ItemPosition.TOP else ItemPosition.SINGLE,
+                    title = stringResource(R.string.choose_from_gallery),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.PhotoLibrary,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    onAction = onChooseFromGallery
+                )
+
+                if (hasPicture) {
+                    SettingsItem(
+                        itemPosition = ItemPosition.BOTTOM,
+                        title = stringResource(R.string.remove_hub_picture),
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        },
+                        onAction = onRemove
+                    )
+                }
+            }
+        },
+        confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.cancel))
             }

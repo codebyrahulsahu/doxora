@@ -4,8 +4,10 @@ import android.net.Uri
 import es.pile.DocumentModel
 import es.pile.PileModel
 import es.pile.core.domain.models.DocumentCoverItem
+import es.pile.core.domain.models.DocumentExportFormat
 import es.pile.core.domain.models.DocumentSortOrder
 import es.pile.core.ui.util.UiText
+import java.io.File
 
 
 data class PileDetailState(
@@ -20,8 +22,18 @@ data class PileDetailState(
     val isLoadingNewDocument: Boolean = false,
     val favoriteDocumentIds: Set<String> = emptySet(),
     val lockedDocumentIds: Set<String> = emptySet(),
+    /** Documents selected while the multi selection mode is active. */
+    val selectedDocumentIds: Set<String> = emptySet(),
+    /** True while a selection action (export, share or delete) is running. */
+    val isSelectionWorking: Boolean = false,
+    /** Profile picture uploaded for this hub, if any. */
+    val hubPictureFile: File? = null,
+    val isWorkingOnHubPicture: Boolean = false,
     val errorMessage: UiText? = null
-)
+) {
+    /** True while one or more documents are selected inside the hub. */
+    val isSelectionMode: Boolean get() = selectedDocumentIds.isNotEmpty()
+}
 
 sealed interface PileDetailEvent {
     data class OnImageDisplayed(val document: DocumentModel) : PileDetailEvent
@@ -37,10 +49,37 @@ sealed interface PileDetailEvent {
     data object OnCameraClick : PileDetailEvent
     data object OnCameraUriConsumed : PileDetailEvent
 
+    /** The built in scanner could not be started, the camera is used instead. */
+    data object OnScannerUnavailable : PileDetailEvent
+
     data object OnConfirmImport : PileDetailEvent
     data object OnDismissDraftWarning : PileDetailEvent
 
     data class OnSortOrderChanged(val sortOrder: DocumentSortOrder) : PileDetailEvent
+
+    // Hub profile picture
+    /** A picture was picked for the person this hub belongs to. */
+    data class OnHubPicturePicked(val uri: Uri) : PileDetailEvent
+    data object OnHubPictureRemoved : PileDetailEvent
+
+    // Multi selection actions
+    data class OnDocumentLongPressed(val documentId: String) : PileDetailEvent
+    data class OnDocumentSelectionToggled(val documentId: String) : PileDetailEvent
+    data object OnSelectionCleared : PileDetailEvent
+
+    /**
+     * Exports the selected documents with the chosen format.
+     *
+     * @param destinationFolderUri Folder granted by the user (only asked once)
+     * or null to fall back to the public Downloads directory.
+     */
+    data class OnExportSelectedClicked(
+        val format: DocumentExportFormat,
+        val destinationFolderUri: Uri? = null
+    ) : PileDetailEvent
+
+    data object OnShareSelectedClicked : PileDetailEvent
+    data object OnDeleteSelectedClicked : PileDetailEvent
 
     data object OnErrorDismissed : PileDetailEvent
 }

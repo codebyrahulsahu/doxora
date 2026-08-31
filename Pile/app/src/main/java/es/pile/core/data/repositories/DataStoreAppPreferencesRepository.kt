@@ -18,4 +18,10 @@ class DataStoreAppPreferencesRepository(
             dataStore.updateData { it.copy(isOnboardingCompleted = completed) }
         }
     }
+
+    override suspend fun updateExportFolderUri(uri: String?) {
+        withContext(ioDispatcher) {
+            dataStore.updateData { it.copy(exportFolderUri = uri) }
+        }
+    }
 }

@@ -10,7 +10,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -29,7 +28,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -39,10 +37,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Photo
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
@@ -60,7 +55,6 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleFloatingActionButton
@@ -79,7 +73,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
@@ -102,6 +95,7 @@ import es.pile.core.domain.models.DocumentSortOrder
 import es.pile.core.domain.models.DocumentViewMode
 import es.pile.core.ui.composables.AlertDraftDocumentWarning
 import es.pile.core.ui.composables.AlertNewPile
+import es.pile.core.ui.composables.DocumentSelectionTopBar
 import es.pile.core.ui.composables.DocumentViewToggle
 import es.pile.core.ui.composables.LoadingAlert
 import es.pile.core.ui.composables.LoadingWrapper
@@ -112,6 +106,7 @@ import es.pile.core.ui.composables.itemDocumentsIconGrid
 import es.pile.core.ui.composables.itemDocumentsVerticalList
 import es.pile.core.ui.controllers.ImportActions
 import es.pile.core.ui.controllers.rememberDocumentImportController
+import es.pile.core.ui.controllers.rememberExportDestinationController
 import es.pile.features.home.ui.compostables.HomeScreenSectionTitle
 import es.pile.features.search.ui.SearchContent
 import kotlinx.coroutines.launch
@@ -163,8 +158,15 @@ fun HomeScreen(
         onUriConsumed = { viewModel.handleEvent(HomeEvent.OnCameraUriConsumed) },
         onPdfSelected = { viewModel.handleEvent(HomeEvent.OnPdfImported(it)) },
         onImagesSelected = { viewModel.handleEvent(HomeEvent.OnImagesImported(it)) },
-        onCameraClick = { viewModel.handleEvent(HomeEvent.OnCameraClick) }
+        onCameraClick = { viewModel.handleEvent(HomeEvent.OnCameraClick) },
+        onScannerError = { viewModel.handleEvent(HomeEvent.OnScannerUnavailable) }
     )
+
+    // Export: the format is always chosen first and the destination folder is
+    // only requested once, then reused for every later export.
+    val exportActions = rememberExportDestinationController { format, folderUri ->
+        viewModel.handleEvent(HomeEvent.OnExportSelectedClicked(format, folderUri))
+    }
 
     var isSearchBarExpanded by rememberSaveable { mutableStateOf(false) }
     var showDeleteSelectionAlert by rememberSaveable { mutableStateOf(false) }
@@ -227,11 +229,11 @@ fun HomeScreen(
         },
         topBar = {
             if (state.isSelectionMode) {
-                SelectionTopBar(
+                DocumentSelectionTopBar(
                     selectedCount = state.selectedDocumentIds.size,
                     enabled = !state.isSelectionWorking,
                     onClose = { viewModel.handleEvent(HomeEvent.OnSelectionCleared) },
-                    onExport = { viewModel.handleEvent(HomeEvent.OnExportSelectedClicked) },
+                    onExportFormatSelected = { format -> exportActions.requestExport(format) },
                     onShare = { viewModel.handleEvent(HomeEvent.OnShareSelectedClicked) },
                     onDelete = { showDeleteSelectionAlert = true }
                 )
@@ -370,6 +372,7 @@ fun HomeScreen(
                         PileCardsRow(
                             piles = state.pileModels,
                             pileDocumentCounts = state.pileDocumentCounts,
+                            pilePictureFiles = state.hubPictureFiles,
                             onPileClick = navigateToPileDetail,
                             onNewPileClick = { isNewPileAlertExpanded = true },
                             onPilesReordered = {
@@ -578,31 +581,51 @@ fun HomeScreen(
     }
 }
 
+/**
+ * An action displayed inside the "+" floating menu.
+ *
+ * @property icon Icon shown at the start of the item.
+ * @property label Text of the item.
+ * @property action Invoked when the item is tapped.
+ */
+data class FabMenuAction(
+    val icon: Painter,
+    val label: String,
+    val action: () -> Unit
+)
+
+/**
+ * The "+" floating action button menu with the document import actions.
+ *
+ * @param extraActions Additional actions appended to the menu (for example
+ * uploading the profile picture of a hub).
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FabMenuWithController(
     modifier: Modifier = Modifier,
     fabMenuExpanded: Boolean,
     updateFabMenuExpanded: (Boolean) -> Unit = {},
-    importActions: ImportActions
+    importActions: ImportActions,
+    extraActions: List<FabMenuAction> = emptyList()
 ) {
     val items = listOf(
-        Triple(
+        FabMenuAction(
             painterResource(R.drawable.ic_clip),
             stringResource(R.string.import_pdf_file),
             importActions.launchPdfPicker
         ),
-        Triple(
+        FabMenuAction(
             rememberVectorPainter(Icons.Filled.Photo),
             stringResource(R.string.import_from_gallery),
             importActions.launchGallery
         ),
-        Triple(
+        FabMenuAction(
             rememberVectorPainter(Icons.Filled.CameraAlt),
             stringResource(R.string.take_a_photo),
             importActions.launchCamera
         )
-    )
+    ) + extraActions
 
     BackHandler(fabMenuExpanded) { updateFabMenuExpanded(false) }
 
@@ -739,122 +762,6 @@ private fun UnsavedDocumentCard(
                     contentDescription = null,
                 )
             }
-        }
-    }
-}
-
-/**
- * Top bar shown while the multi selection mode is active: it replaces the search
- * bar and reveals the actions (Export, Share and Delete) for every selected
- * document.
- */
-@Composable
-private fun SelectionTopBar(
-    selectedCount: Int,
-    enabled: Boolean,
-    onClose: () -> Unit,
-    onExport: () -> Unit,
-    onShare: () -> Unit,
-    onDelete: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.primaryContainer
-    ) {
-        Column(
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(horizontal = 8.dp)
-                .padding(top = 4.dp, bottom = 12.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onClose, enabled = enabled) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = stringResource(R.string.close_menu)
-                    )
-                }
-
-                Text(
-                    text = stringResource(R.string.documents_selected, selectedCount),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                SelectionActionButton(
-                    icon = Icons.Filled.FileDownload,
-                    label = stringResource(R.string.export),
-                    onClick = onExport,
-                    enabled = enabled,
-                    modifier = Modifier.weight(1f)
-                )
-
-                SelectionActionButton(
-                    icon = Icons.Filled.Share,
-                    label = stringResource(R.string.share),
-                    onClick = onShare,
-                    enabled = enabled,
-                    modifier = Modifier.weight(1f)
-                )
-
-                SelectionActionButton(
-                    icon = Icons.Filled.Delete,
-                    label = stringResource(R.string.delete),
-                    onClick = onDelete,
-                    enabled = enabled,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SelectionActionButton(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    enabled: Boolean = true,
-    tint: Color = MaterialTheme.colorScheme.primary,
-    modifier: Modifier = Modifier
-) {
-    val contentAlpha = if (enabled) 1f else 0.38f
-
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = tint.copy(alpha = contentAlpha),
-                modifier = Modifier.size(18.dp)
-            )
-
-            Spacer(Modifier.width(6.dp))
-
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha)
-            )
         }
     }
 }
