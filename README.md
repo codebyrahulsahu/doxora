@@ -1,6 +1,18 @@
-# Doxora
+# Doxora App
 
-Android app for organizing personal documents with tags (“hubs”). Source lives in `Pile/` (Apache-2.0, based on [rubenalfon/Pile](https://github.com/rubenalfon/Pile)).
+**Doxora** is a free, open-source, privacy-first **Android document manager** for organizing all your personal documents (PDF, photos, scans) with color-coded **Hubs**, on-device **OCR**, **favorites**, per-document **PIN lock**, a **recycle bin** and **local backup & restore**. Everything stays on your device — no cloud, no tracking.
+
+- **App name:** Doxora
+- **Developer / GitHub:** [codebyrahulsahu](https://github.com/codebyrahulsahu)
+- **Source repository:** [`codebyrahulsahu/pile-documents`](https://github.com/codebyrahulsahu/pile-documents)
+- **License:** Apache-2.0 (based on [rubenalfon/Pile](https://github.com/rubenalfon/Pile))
+- **Platform:** Android (Kotlin + Jetpack Compose)
+
+> Searching for **“doxora app github”** or **“Doxora App GitHub”**? This is the official GitHub repository — open the **Releases** tab to download the latest APK.
+
+## Download APK
+
+Grab the latest APK from the **[Releases](https://github.com/codebyrahulsahu/pile-documents/releases)** page (look for the latest release tagged `v1.2.0` and download the attached `*debug.apk`), or build it yourself from the instructions below.
 
 ## Features
 
