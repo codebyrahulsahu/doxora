@@ -7,13 +7,12 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -34,12 +35,16 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
- * Prompt shown right after the user picks images (gallery, camera or scanner),
- * asking whether the imported images should be compressed and, if so, to which
- * maximum size per image.
+ * Document Resizer prompt shown right after images are picked, no matter where
+ * they come from (gallery, device folders, camera or scanner).
  *
- * The pre-selected answer follows the Document Resizer settings, but the choice
- * made here always wins for this specific import.
+ * The dialog is driven by a single ON/OFF switch: when the resizer is on, the
+ * maximum size per image can be chosen (presets or a custom KB/MB value); when
+ * it is off the images are imported exactly as they are.
+ *
+ * The switch starts on the value stored in the Document Resizer settings, and
+ * the answer given here wins for this import (and is remembered as the new
+ * default by the caller).
  *
  * @param imageCount How many images are about to be imported.
  * @param defaultChoice Pre-selected compression choice (from the settings).
@@ -74,29 +79,25 @@ fun CompressImagesDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.compress_images_title)) },
+        title = { Text(stringResource(R.string.document_resizer_switch_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = stringResource(R.string.compress_images_body, imageCount),
+                    text = stringResource(R.string.document_resizer_prompt_body, imageCount),
                     style = MaterialTheme.typography.bodyMedium
                 )
 
-                CompressionOptionRow(
-                    selected = !compress,
-                    title = stringResource(R.string.keep_original_size),
-                    subtitle = stringResource(R.string.keep_original_size_body),
-                    onClick = { compress = false }
-                )
-
-                CompressionOptionRow(
-                    selected = compress,
-                    title = stringResource(R.string.compress_images_option),
-                    subtitle = stringResource(R.string.compress_images_option_body),
-                    onClick = { compress = true }
+                DocumentResizerSwitchRow(
+                    checked = compress,
+                    onCheckedChange = { compress = it }
                 )
 
                 if (compress) {
+                    Text(
+                        text = stringResource(R.string.document_resizer_max_size),
+                        style = MaterialTheme.typography.titleSmall
+                    )
+
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         ImageCompressionChoice.PRESET_SIZES_KB.forEach { presetKb ->
                             FilterChip(
@@ -177,31 +178,40 @@ fun CompressImagesDialog(
     )
 }
 
-/** One selectable row (radio button + title + subtitle) of the compression prompt. */
+/** ON/OFF switch that enables or disables the Document Resizer for this import. */
 @Composable
-private fun CompressionOptionRow(
-    selected: Boolean,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
+private fun DocumentResizerSwitchRow(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectable(selected = selected, onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        RadioButton(selected = selected, onClick = onClick)
+    val title = stringResource(R.string.document_resizer_switch_title)
 
-        Column(Modifier.padding(vertical = 4.dp)) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = 4.dp)
+        ) {
             Text(text = title, style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = subtitle,
+                text = stringResource(
+                    if (checked) R.string.document_resizer_switch_on
+                    else R.string.document_resizer_switch_off
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.semantics { contentDescription = title }
+        )
     }
 }
 

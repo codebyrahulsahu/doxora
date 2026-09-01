@@ -1,5 +1,6 @@
 package es.pile.features.pileDetail.ui
 
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -169,7 +170,12 @@ class PileDetailViewModel(
                 it.copy(errorMessage = UiText.StringResource(R.string.scanner_unavailable))
             }
 
-            is PileDetailEvent.OnHubPicturePicked -> saveHubPicture(event.uri)
+            is PileDetailEvent.OnHubPicturePicked -> loadHubPictureForCropping(event.uri)
+
+            is PileDetailEvent.OnHubPictureCropConfirmed -> saveHubPicture(event.bitmap)
+
+            PileDetailEvent.OnHubPictureCropDismissed ->
+                _state.update { it.copy(hubPictureToCrop = null) }
 
             PileDetailEvent.OnHubPictureRemoved -> removeHubPicture()
 
@@ -330,15 +336,42 @@ class PileDetailViewModel(
     }
 
     /**
-     * Stores the picture uploaded for the person this hub belongs to.
+     * Loads the picked picture so it can be adjusted with the cropper before it
+     * becomes the picture of this hub.
      */
-    private fun saveHubPicture(uri: Uri) {
+    private fun loadHubPictureForCropping(uri: Uri) {
         viewModelScope.launch {
-            _state.update { it.copy(isWorkingOnHubPicture = true) }
+            _state.update { it.copy(isPreparingHubPicture = true) }
+
+            runCatching { fileRepository.loadPictureForCropping(uri) }
+                .onSuccess { bitmap ->
+                    _state.update {
+                        it.copy(isPreparingHubPicture = false, hubPictureToCrop = bitmap)
+                    }
+                }
+                .onFailure { error ->
+                    Napier.e("Error loading the hub picture", error)
+                    _state.update {
+                        it.copy(
+                            isPreparingHubPicture = false,
+                            hubPictureToCrop = null,
+                            errorMessage = UiText.StringResource(R.string.error_loading_picture)
+                        )
+                    }
+                }
+        }
+    }
+
+    /**
+     * Stores the cropped picture uploaded for the person this hub belongs to.
+     */
+    private fun saveHubPicture(bitmap: Bitmap) {
+        viewModelScope.launch {
+            _state.update { it.copy(isWorkingOnHubPicture = true, hubPictureToCrop = null) }
 
             val currentPath = settingsRepository.userSettings.first().hubPicturePaths[pileId]
 
-            runCatching { fileRepository.saveProfilePicture(uri, currentPath) }
+            runCatching { fileRepository.saveProfilePicture(bitmap, currentPath) }
                 .onSuccess { fileName ->
                     settingsRepository.updateHubPicturePath(pileId, fileName)
                     _state.update {
@@ -461,12 +494,28 @@ class PileDetailViewModel(
     private fun confirmImageImport(choice: ImageCompressionChoice) {
         val pending = state.value.pendingImageImport ?: return
         _state.update { it.copy(pendingImageImport = null) }
+        rememberResizerChoice(choice)
 
         if (state.value.temporaryDocument != null) {
             pendingImportAction = { importImages(pending.uris, choice) }
             _state.update { it.copy(showDraftWarning = true) }
         } else {
             importImages(pending.uris, choice)
+        }
+    }
+
+    /**
+     * The ON/OFF switch of the Document Resizer prompt is also remembered as the
+     * new default, so the answer given here pre-selects the next import and stays
+     * in sync with Settings -> Document Resizer.
+     */
+    private fun rememberResizerChoice(choice: ImageCompressionChoice) {
+        viewModelScope.launch {
+            settingsRepository.updateDocumentResizerEnabled(choice.compress)
+
+            if (choice.compress) {
+                settingsRepository.updateDocumentResizerTargetSizeKb(choice.targetSizeKb)
+            }
         }
     }
 

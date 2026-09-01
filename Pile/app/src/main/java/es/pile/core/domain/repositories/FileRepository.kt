@@ -295,6 +295,26 @@ interface FileRepository {
     suspend fun saveProfilePicture(uri: Uri, previousFileName: String? = null): String
 
     /**
+     * Stores an already prepared (for example cropped) bitmap as the profile
+     * picture. The bitmap is downscaled when it is bigger than needed.
+     *
+     * @param bitmap The picture to store.
+     * @param previousFileName File name of the current profile picture to delete, if any.
+     * @return The file name of the stored picture, to be persisted in the settings.
+     */
+    suspend fun saveProfilePicture(bitmap: Bitmap, previousFileName: String? = null): String
+
+    /**
+     * Loads a picked picture into memory so it can be adjusted with the cropper
+     * before being stored as a profile picture. The bitmap is downscaled to a
+     * reasonable size and rotated according to its EXIF data.
+     *
+     * @param uri The picked image URI.
+     * @return The decoded bitmap, ready to be cropped.
+     */
+    suspend fun loadPictureForCropping(uri: Uri): Bitmap
+
+    /**
      * Returns the internal [File] of a stored profile picture.
      *
      * @param fileName The file name returned by [saveProfilePicture].

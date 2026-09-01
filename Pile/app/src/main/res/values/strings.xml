@@ -129,6 +129,13 @@
     <string name="hub_picture_removed">Hub picture removed</string>
     <string name="saving_hub_picture">Saving the hub picture…</string>
     <string name="error_setting_hub_picture">Error setting the hub picture</string>
+    <string name="crop_hub_picture">Crop hub picture</string>
+    <string name="crop_picture_hint">Drag the corners to choose the part of the photo shown in the hub avatar.</string>
+    <string name="crop_picture_action">Use photo</string>
+    <string name="rotate_left">Rotate left</string>
+    <string name="rotate_right">Rotate right</string>
+    <string name="preparing_picture">Preparing the picture…</string>
+    <string name="error_loading_picture">The selected picture could not be opened</string>
 
     <string name="draft_warning_title">Unsaved Document</string>
     <string name="draft_warning_body">You have an unsaved document. Creating a new one will discard the current draft. Do you want to continue or go back to editing the draft?</string>
@@ -143,7 +150,9 @@
     <string name="import_pdf">Import PDF</string>
     <string name="import_pdf_file">Import PDF file</string>
     <string name="import_from_gallery">Import From Gallery</string>
+    <string name="import_from_device">Import from device folder</string>
     <string name="take_a_photo">Take a photo</string>
+    <string name="select_image_source">Add pages from</string>
 
 
     <string name="preview">Preview</string>
@@ -320,6 +329,11 @@ Email: %3$s</string>
     <string name="compress_images_option">Compress images</string>
     <string name="compress_images_option_body">Pick the maximum size per image.</string>
     <string name="compression_custom">Custom</string>
+    <string name="document_resizer_switch_title">Document Resizer</string>
+    <string name="document_resizer_switch_on">On · images are resized</string>
+    <string name="document_resizer_switch_off">Off · images keep their original size</string>
+    <string name="document_resizer_prompt_body">%1$d image(s) selected. Resize them to a maximum size per image, or import them untouched.</string>
+    <string name="document_resizer_max_size">Maximum size per image</string>
     <string name="import_images_action">Import</string>
 
     <string name="export_documents">Export</string>

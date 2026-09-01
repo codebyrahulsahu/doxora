@@ -76,6 +76,7 @@ import es.pile.core.ui.composables.DocumentSortMenu
 import es.pile.core.ui.composables.LoadingAlert
 import es.pile.core.ui.composables.LoadingWrapper
 import es.pile.core.ui.composables.PictureAvatar
+import es.pile.core.ui.composables.PictureCropperDialog
 import es.pile.core.ui.composables.itemDocumentsVerticalList
 import es.pile.core.ui.controllers.rememberDocumentImportController
 import es.pile.core.ui.controllers.rememberExportDestinationController
@@ -420,6 +421,10 @@ fun PileDetailContent(
             LoadingAlert(title = stringResource(R.string.preparing_documents))
         }
 
+        if (state.isPreparingHubPicture) {
+            LoadingAlert(title = stringResource(R.string.preparing_picture))
+        }
+
         if (state.isWorkingOnHubPicture) {
             LoadingAlert(title = stringResource(R.string.saving_hub_picture))
         }
@@ -513,6 +518,18 @@ fun PileDetailContent(
                         if (tempDocument.isIncomingPdf) navigateToAddDocument(tempDocument.id)
                         else navigateToEditDocument(tempDocument.id)
                     }
+                }
+            )
+        }
+
+        // Adjust the picked picture before it becomes the hub avatar.
+        state.hubPictureToCrop?.let { pictureToCrop ->
+            PictureCropperDialog(
+                bitmap = pictureToCrop,
+                title = stringResource(R.string.crop_hub_picture),
+                onDismiss = { onEvent(PileDetailEvent.OnHubPictureCropDismissed) },
+                onConfirm = { cropped ->
+                    onEvent(PileDetailEvent.OnHubPictureCropConfirmed(cropped))
                 }
             )
         }

@@ -383,8 +383,24 @@ class EditDocumentViewModel(
     private fun confirmImageImport(choice: ImageCompressionChoice) {
         val pending = state.value.pendingImageImport ?: return
         _state.update { it.copy(pendingImageImport = null) }
+        rememberResizerChoice(choice)
 
         addImages(pending.uris, choice)
+    }
+
+    /**
+     * The ON/OFF switch of the Document Resizer prompt is also remembered as the
+     * new default, so the answer given here pre-selects the next import and stays
+     * in sync with Settings -> Document Resizer.
+     */
+    private fun rememberResizerChoice(choice: ImageCompressionChoice) {
+        viewModelScope.launch {
+            settingsRepository.updateDocumentResizerEnabled(choice.compress)
+
+            if (choice.compress) {
+                settingsRepository.updateDocumentResizerTargetSizeKb(choice.targetSizeKb)
+            }
+        }
     }
 
     private fun addImages(uriList: List<Uri>, compression: ImageCompressionChoice? = null) {

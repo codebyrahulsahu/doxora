@@ -1,5 +1,6 @@
 package es.pile.features.pileDetail.ui
 
+import android.graphics.Bitmap
 import android.net.Uri
 import es.pile.DocumentModel
 import es.pile.PileModel
@@ -32,6 +33,14 @@ data class PileDetailState(
     val isSelectionWorking: Boolean = false,
     /** Profile picture uploaded for this hub, if any. */
     val hubPictureFile: File? = null,
+    /**
+     * Picture just picked for this hub, waiting to be adjusted with the cropper
+     * before it is stored.
+     */
+    val hubPictureToCrop: Bitmap? = null,
+    /** True while the picked picture is being decoded for the cropper. */
+    val isPreparingHubPicture: Boolean = false,
+    /** True while the cropped picture is being stored. */
     val isWorkingOnHubPicture: Boolean = false,
     val errorMessage: UiText? = null
 ) {
@@ -70,6 +79,12 @@ sealed interface PileDetailEvent {
     // Hub profile picture
     /** A picture was picked for the person this hub belongs to. */
     data class OnHubPicturePicked(val uri: Uri) : PileDetailEvent
+
+    /** The picked picture was cropped and can be stored as the hub picture. */
+    data class OnHubPictureCropConfirmed(val bitmap: Bitmap) : PileDetailEvent
+
+    /** The cropper was closed without saving: the picked picture is discarded. */
+    data object OnHubPictureCropDismissed : PileDetailEvent
     data object OnHubPictureRemoved : PileDetailEvent
 
     // Multi selection actions

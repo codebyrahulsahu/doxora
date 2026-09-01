@@ -150,7 +150,10 @@ class LocalBackupRepositoryImpl(
                 files = files
             )
 
-            val tempFile = File(backupCacheDirectory(), "pile-backup-${System.currentTimeMillis()}.zip")
+            val tempFile = File(
+                backupCacheDirectory(),
+                "doxora document backup-${System.currentTimeMillis()}.zip"
+            )
 
             try {
                 ZipOutputStream(BufferedOutputStream(FileOutputStream(tempFile))).use { zip ->

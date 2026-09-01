@@ -444,8 +444,27 @@ class FileRepositoryImpl(
         uri: Uri,
         previousFileName: String?
     ): String = withContext(ioDispatcher) {
-        val folder = File(appDirectory, PROFILE_PICTURE_FOLDER).apply { mkdirs() }
+        val bitmap = decodeOrientedPicture(uri, PROFILE_PICTURE_MAX_SIZE)
 
+        storeProfilePicture(bitmap, previousFileName)
+    }
+
+    override suspend fun saveProfilePicture(
+        bitmap: Bitmap,
+        previousFileName: String?
+    ): String = withContext(ioDispatcher) {
+        storeProfilePicture(bitmap.downscaledTo(PROFILE_PICTURE_MAX_SIZE), previousFileName)
+    }
+
+    override suspend fun loadPictureForCropping(uri: Uri): Bitmap = withContext(ioDispatcher) {
+        decodeOrientedPicture(uri, PROFILE_PICTURE_CROP_MAX_SIZE)
+    }
+
+    /**
+     * Decodes a picked picture downscaled to [maxSize] pixels per side and
+     * rotated according to its EXIF data.
+     */
+    private suspend fun decodeOrientedPicture(uri: Uri, maxSize: Int): Bitmap {
         val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
             ?: throw IOException("The selected image could not be read")
 
@@ -457,10 +476,7 @@ class FileRepositoryImpl(
         }
 
         val options = BitmapFactory.Options().apply {
-            inSampleSize = imageTransformationHelper.calculateInSampleSize(
-                bounds,
-                PROFILE_PICTURE_MAX_SIZE
-            )
+            inSampleSize = imageTransformationHelper.calculateInSampleSize(bounds, maxSize)
             inPreferredConfig = Bitmap.Config.ARGB_8888
         }
 
@@ -469,16 +485,21 @@ class FileRepositoryImpl(
 
         val rotation = imageTransformationHelper.getExifRotation(uri)
 
-        val orientedBitmap = if (rotation != 0) {
+        return if (rotation != 0) {
             val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
             Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
         } else {
             bitmap
         }
+    }
+
+    /** Writes [bitmap] as the new profile picture and deletes the replaced one. */
+    private fun storeProfilePicture(bitmap: Bitmap, previousFileName: String?): String {
+        val folder = File(appDirectory, PROFILE_PICTURE_FOLDER).apply { mkdirs() }
 
         val destination = File(folder, "profile_${System.currentTimeMillis()}.jpg")
         destination.outputStream().use { output ->
-            orientedBitmap.compress(Bitmap.CompressFormat.JPEG, PROFILE_PICTURE_QUALITY, output)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, PROFILE_PICTURE_QUALITY, output)
         }
 
         // Remove the replaced picture so internal storage does not fill up with orphans
@@ -486,7 +507,19 @@ class FileRepositoryImpl(
             File(folder, previousFileName).delete()
         }
 
-        destination.name
+        return destination.name
+    }
+
+    /** Scales a bitmap down so that its longest side is at most [maxSize] pixels. */
+    private fun Bitmap.downscaledTo(maxSize: Int): Bitmap {
+        val longestSide = maxOf(width, height)
+        if (longestSide <= maxSize || longestSide == 0) return this
+
+        val ratio = maxSize.toFloat() / longestSide.toFloat()
+        val scaledWidth = (width * ratio).toInt().coerceAtLeast(1)
+        val scaledHeight = (height * ratio).toInt().coerceAtLeast(1)
+
+        return scale(scaledWidth, scaledHeight)
     }
 
     override fun getProfilePictureFile(fileName: String): File =
@@ -813,6 +846,12 @@ class FileRepositoryImpl(
 
         /** Max side in pixels of a stored profile picture. */
         const val PROFILE_PICTURE_MAX_SIZE = 512
+
+        /**
+         * Max side in pixels of the picture loaded into the cropper: bigger than
+         * the stored one so the cropped area still has enough resolution.
+         */
+        const val PROFILE_PICTURE_CROP_MAX_SIZE = 1536
 
         /** JPEG quality of a stored profile picture. */
         const val PROFILE_PICTURE_QUALITY = 90
