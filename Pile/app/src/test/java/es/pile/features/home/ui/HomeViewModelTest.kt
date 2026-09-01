@@ -12,6 +12,7 @@ import es.pile.core.domain.repositories.SettingsRepository
 import es.pile.core.domain.useCases.CreatePileUseCase
 import es.pile.core.domain.useCases.GetDocumentSizesUseCase
 import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
+import es.pile.core.domain.useCases.ResizeDocumentsUseCase
 import es.pile.features.documentDetail.domain.helper.DocumentOpener
 import es.pile.features.documentDetail.domain.useCases.MoveDocumentToTrashUseCase
 import es.pile.features.documentDetail.domain.useCases.export.ExportDocumentImagesUseCase
@@ -65,6 +66,7 @@ class HomeViewModelTest {
     private val getPdfUriUseCase: GetPdfUriUseCase = mockk(relaxed = true)
     private val exportDocumentUseCase: ExportDocumentUseCase = mockk(relaxed = true)
     private val exportDocumentImagesUseCase: ExportDocumentImagesUseCase = mockk(relaxed = true)
+    private val resizeDocumentsUseCase: ResizeDocumentsUseCase = mockk(relaxed = true)
     private val documentOpener: DocumentOpener = mockk(relaxed = true)
 
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -112,6 +114,7 @@ class HomeViewModelTest {
             getPdfUriUseCase,
             exportDocumentUseCase,
             exportDocumentImagesUseCase,
+            resizeDocumentsUseCase,
             documentOpener
         )
 

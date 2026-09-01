@@ -65,8 +65,7 @@ interface SettingsRepository {
      * Enables or disables the Document Resizer.
      *
      * When enabled, new document images are compressed to the configured
-     * [updateDocumentResizerTargetSizeKb] target size keeping the best
-     * possible quality.
+     * [updateDocumentResizerTargetSizeKb] target size with zero quality loss.
      *
      * @param enable Whether the Document Resizer should be enabled.
      */

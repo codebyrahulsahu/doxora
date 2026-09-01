@@ -50,8 +50,9 @@ import es.pile.core.domain.models.DocumentResizeMode
  *
  * The Document Resizer lives here (and only here): it is offered exclusively
  * while a document is actively selected. Tapping it opens the
- * [DocumentResizeOptionsDialog] with exactly two options: save the resized
- * pages as the original file in the app, or save them as a duplicate file.
+ * [DocumentResizeOptionsDialog] with a custom target size (KB or MB) and
+ * exactly two save options: save the resized pages as the original file in
+ * the app, or save them as a duplicate file.
  */
 @Composable
 fun DocumentSelectionTopBar(
@@ -61,7 +62,8 @@ fun DocumentSelectionTopBar(
     onExportFormatSelected: (DocumentExportFormat) -> Unit,
     onShare: () -> Unit,
     onDelete: () -> Unit,
-    onResizeModeSelected: (DocumentResizeMode) -> Unit,
+    onResizeConfirmed: (DocumentResizeMode, targetSizeKb: Int) -> Unit,
+    initialTargetSizeKb: Int = 512,
     modifier: Modifier = Modifier
 ) {
     var exportMenuExpanded by rememberSaveable { mutableStateOf(false) }
@@ -142,13 +144,14 @@ fun DocumentSelectionTopBar(
         }
     }
 
-    // Document Resizer prompt: exactly two options for the resized documents.
+    // Document Resizer prompt: custom target size plus two save options.
     if (resizeOptionsExpanded) {
         DocumentResizeOptionsDialog(
+            initialTargetSizeKb = initialTargetSizeKb,
             onDismiss = { resizeOptionsExpanded = false },
-            onModeSelected = { mode ->
+            onConfirm = { mode, targetSizeKb ->
                 resizeOptionsExpanded = false
-                onResizeModeSelected(mode)
+                onResizeConfirmed(mode, targetSizeKb)
             }
         )
     }

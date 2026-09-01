@@ -92,7 +92,8 @@ class HomeViewModel(
                 _state.update {
                     it.copy(
                         viewMode = settings.documentViewMode,
-                        hubPictureFiles = hubPictureFiles
+                        hubPictureFiles = hubPictureFiles,
+                        documentResizerTargetSizeKb = settings.documentResizerTargetSizeKb
                     )
                 }
             }
@@ -227,7 +228,8 @@ class HomeViewModel(
 
             HomeEvent.OnSelectedDocumentsDeleted -> clearSelection()
 
-            is HomeEvent.OnResizeSelectedClicked -> resizeSelectedDocuments(event.mode)
+            is HomeEvent.OnResizeSelectedClicked ->
+                resizeSelectedDocuments(event.mode, event.targetSizeKb)
 
             HomeEvent.OnErrorDismissed -> _state.update { it.copy(errorMessage = null) }
         }
@@ -436,16 +438,16 @@ class HomeViewModel(
     /**
      * Resizes every selected document with the Document Resizer, saving the
      * result over the original files or as duplicate documents depending on
-     * the option chosen in the two-option prompt.
+     * the option chosen in the prompt, at the custom [targetSizeKb].
      */
-    private fun resizeSelectedDocuments(mode: DocumentResizeMode) {
+    private fun resizeSelectedDocuments(mode: DocumentResizeMode, targetSizeKb: Int) {
         viewModelScope.launch {
             val documents = selectedDocuments()
             if (documents.isEmpty()) return@launch
 
             _state.update { it.copy(isSelectionWorking = true) }
 
-            val result = resizeDocumentsUseCase(documents, mode)
+            val result = resizeDocumentsUseCase(documents, mode, targetSizeKb)
 
             _state.update {
                 it.copy(

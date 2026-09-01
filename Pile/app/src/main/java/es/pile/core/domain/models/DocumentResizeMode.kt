@@ -4,7 +4,8 @@ package es.pile.core.domain.models
  * How the result of the Document Resizer should be stored when one or more
  * already imported documents are resized from the selection top bar.
  *
- * The resizer prompt offers exactly these two options.
+ * The resizer prompt offers exactly these two save options after the user
+ * sets a custom target file size.
  */
 enum class DocumentResizeMode {
     /** The resized pages replace the original files of the document in the app. */

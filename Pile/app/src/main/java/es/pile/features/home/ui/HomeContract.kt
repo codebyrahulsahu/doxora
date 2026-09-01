@@ -31,6 +31,8 @@ data class HomeState(
     val lockedDocumentIds: Set<String> = emptySet(),
     val selectedDocumentIds: Set<String> = emptySet(),
     val isSelectionWorking: Boolean = false,
+    /** Last Document Resizer target size, used to pre-fill the resize prompt. */
+    val documentResizerTargetSizeKb: Int = 512,
     val errorMessage: UiText? = null
 ) {
     /** True while one or more documents are selected in the multi selection mode. */
@@ -83,9 +85,12 @@ sealed interface HomeEvent {
 
     /**
      * Resizes every selected document with the Document Resizer, saving the
-     * result as chosen in the two-option prompt.
+     * result as chosen in the prompt, at the custom [targetSizeKb].
      */
-    data class OnResizeSelectedClicked(val mode: DocumentResizeMode) : HomeEvent
+    data class OnResizeSelectedClicked(
+        val mode: DocumentResizeMode,
+        val targetSizeKb: Int
+    ) : HomeEvent
 
     data object OnErrorDismissed : HomeEvent
 }

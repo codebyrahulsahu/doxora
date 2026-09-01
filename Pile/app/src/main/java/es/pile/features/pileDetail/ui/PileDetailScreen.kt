@@ -276,9 +276,10 @@ fun PileDetailContent(
                     onExportFormatSelected = { format -> exportActions.requestExport(format) },
                     onShare = { onEvent(PileDetailEvent.OnShareSelectedClicked) },
                     onDelete = { showDeleteSelectionAlert = true },
-                    onResizeModeSelected = { mode ->
-                        onEvent(PileDetailEvent.OnResizeSelectedClicked(mode))
-                    }
+                    onResizeConfirmed = { mode, targetSizeKb ->
+                        onEvent(PileDetailEvent.OnResizeSelectedClicked(mode, targetSizeKb))
+                    },
+                    initialTargetSizeKb = state.documentResizerTargetSizeKb
                 )
             } else {
                 state.pile?.let { pileModel ->

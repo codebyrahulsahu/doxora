@@ -309,7 +309,14 @@ Email: %3$s</string>
     <string name="storage_saver_body">Save additional files at a slightly lower quality. Imported PDFs will retain their original quality</string>
 
     <string name="document_resizer">Document Resizer</string>
-    <string name="document_resizer_options_body">Compress the pages of the selected documents while keeping the best possible quality. Choose how to save the result:</string>
+    <string name="document_resizer_options_body">Set a custom target file size, then choose how to save the resized pages. Image quality is never reduced.</string>
+    <string name="document_resizer_target_size">Target file size</string>
+    <string name="document_resizer_target_size_hint">e.g. 512</string>
+    <string name="document_resizer_unit_label">Unit</string>
+    <string name="document_resizer_unit_kb">KB</string>
+    <string name="document_resizer_unit_mb">MB</string>
+    <string name="document_resizer_invalid_size">Enter a size of at least 16 KB</string>
+    <string name="document_resizer_lossless_hint">Zero quality loss: pages keep maximum quality. Only dimensions are reduced to fit the target size.</string>
     <string name="resize">Resize</string>
     <string name="resize_save_as_original">Save as original file in app</string>
     <string name="resize_save_as_duplicate">Save as duplicate file</string>

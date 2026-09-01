@@ -96,9 +96,12 @@ sealed interface PileDetailEvent {
 
     /**
      * Resizes every selected document with the Document Resizer, saving the
-     * result as chosen in the two-option prompt.
+     * result as chosen in the prompt, at the custom [targetSizeKb].
      */
-    data class OnResizeSelectedClicked(val mode: DocumentResizeMode) : PileDetailEvent
+    data class OnResizeSelectedClicked(
+        val mode: DocumentResizeMode,
+        val targetSizeKb: Int
+    ) : PileDetailEvent
 
     data object OnErrorDismissed : PileDetailEvent
 }

@@ -140,9 +140,10 @@ interface FileRepository {
     /**
      * Saves a list of [Uri] objects as JPEG images compressed to a custom target file size.
      *
-     * The Document Resizer keeps the original dimensions and the highest possible
-     * quality while making sure every saved image fits the requested size. Images
-     * that already fit the target are stored unchanged (full quality).
+     * The Document Resizer keeps zero quality loss: images are always encoded
+     * at maximum JPEG quality. When a page is larger than the target, only its
+     * pixel dimensions are reduced until the lossless-quality encoding fits.
+     * Images that already fit the target are stored unchanged.
      *
      * @param storageType The type of storage (PERSISTENT or CACHE).
      * @param uris List of URIs of images to be saved.
@@ -161,8 +162,9 @@ interface FileRepository {
      * Compresses an image already stored for a document so it fits [targetSizeKb],
      * replacing the stored file in place ("Save as original file in app").
      *
-     * The original dimensions and the highest possible quality are kept, and
-     * images that already fit the target size are left untouched.
+     * Quality is never reduced. Images that already fit the target size are
+     * left untouched; larger images are downscaled (keeping maximum JPEG
+     * quality) until they fit.
      *
      * @param storageType The type of storage (PERSISTENT or CACHE).
      * @param documentId The unique identifier of the document that owns the image.

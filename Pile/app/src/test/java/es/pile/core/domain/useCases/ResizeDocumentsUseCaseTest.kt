@@ -11,6 +11,7 @@ import es.pile.core.domain.repositories.DocumentModelRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.repositories.SettingsRepository
 import io.mockk.CapturingSlot
+import io.mockk.any
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -33,7 +34,7 @@ class ResizeDocumentsUseCaseTest {
     private val documentModelRepository: DocumentModelRepository = mockk(relaxed = true)
     private val documentImageRepository: DocumentImageRepository = mockk(relaxed = true)
     private val bitmapCacheRepository: BitmapCacheRepository = mockk(relaxed = true)
-    private val settingsRepository: SettingsRepository = mockk {
+    private val settingsRepository: SettingsRepository = mockk(relaxed = true) {
         every { userSettings } returns flowOf(UserSettings(documentResizerTargetSizeKb = 512))
     }
 
@@ -84,6 +85,8 @@ class ResizeDocumentsUseCaseTest {
         // Then: both pages are compressed in place and the document is refreshed.
         assertEquals(1, result.resizedCount)
         assertEquals(0, result.skippedCount)
+        // No custom size was typed, so the stored setting is left untouched.
+        coVerify(exactly = 0) { settingsRepository.updateDocumentResizerTargetSizeKb(any()) }
 
         coVerify {
             fileRepository.resizeStoredImageToTargetSize(
@@ -162,5 +165,58 @@ class ResizeDocumentsUseCaseTest {
         assertEquals(0, result.resizedCount)
         assertEquals(1, result.skippedCount)
         coVerify(exactly = 0) { documentModelRepository.updateDocumentModel(any()) }
+    }
+
+    @Test
+    fun `custom target size is used instead of the stored setting`() = runTest {
+        // Given
+        val doc = document(imageIds = listOf("img_a.jpg"))
+        coEvery {
+            fileRepository.resizeStoredImageToTargetSize(
+                documentId = doc.id,
+                imageId = "img_a.jpg",
+                targetSizeKb = 2048
+            )
+        } returns true
+
+        // When: the user typed 2 MB (2048 KB) in the resizer prompt.
+        val result = useCase(listOf(doc), DocumentResizeMode.SAVE_AS_ORIGINAL, targetSizeKb = 2048)
+
+        // Then
+        assertEquals(1, result.resizedCount)
+        coVerify {
+            fileRepository.resizeStoredImageToTargetSize(
+                documentId = doc.id, imageId = "img_a.jpg", targetSizeKb = 2048
+            )
+        }
+        coVerify(exactly = 0) {
+            fileRepository.resizeStoredImageToTargetSize(
+                documentId = any(), imageId = any(), targetSizeKb = 512
+            )
+        }
+        // The custom size is remembered so the prompt can pre-fill it next time.
+        coVerify { settingsRepository.updateDocumentResizerTargetSizeKb(2048) }
+    }
+
+    @Test
+    fun `custom target size below the minimum is raised to 16 KB`() = runTest {
+        val doc = document(imageIds = listOf("img_a.jpg"))
+        coEvery {
+            fileRepository.resizeStoredImageToTargetSize(
+                documentId = doc.id,
+                imageId = "img_a.jpg",
+                targetSizeKb = 16
+            )
+        } returns true
+
+        val result = useCase(listOf(doc), DocumentResizeMode.SAVE_AS_ORIGINAL, targetSizeKb = 1)
+
+        assertEquals(1, result.resizedCount)
+        coVerify {
+            fileRepository.resizeStoredImageToTargetSize(
+                documentId = doc.id, imageId = "img_a.jpg", targetSizeKb = 16
+            )
+        }
+        coVerify { settingsRepository.updateDocumentResizerTargetSizeKb(16) }
     }
 }
