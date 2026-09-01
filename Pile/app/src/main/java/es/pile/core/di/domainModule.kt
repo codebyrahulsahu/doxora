@@ -4,6 +4,7 @@ import es.pile.core.domain.useCases.CreatePileUseCase
 import es.pile.core.domain.useCases.GetDocumentSizesUseCase
 import es.pile.core.domain.useCases.RequestBitmapLoadUseCase
 import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
+import es.pile.core.domain.useCases.ResizeDocumentsUseCase
 import es.pile.core.domain.useCases.SaveImagesUseCase
 import org.koin.core.module.dsl.factoryOf
 import org.koin.dsl.module
@@ -14,4 +15,5 @@ val domainModule = module {
     factoryOf(::CreatePileUseCase)
     factoryOf(::SaveImagesUseCase)
     factoryOf(::GetDocumentSizesUseCase)
+    factoryOf(::ResizeDocumentsUseCase)
 }

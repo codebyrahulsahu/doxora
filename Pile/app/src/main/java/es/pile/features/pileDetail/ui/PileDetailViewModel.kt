@@ -8,10 +8,9 @@ import es.pile.DocumentModel
 import es.pile.R
 import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentExportFormat
+import es.pile.core.domain.models.DocumentResizeMode
 import es.pile.core.domain.models.DocumentStatusConstants.SAVED
 import es.pile.core.domain.models.DocumentStatusConstants.TEMPORARY
-import es.pile.core.domain.models.ImageCompressionChoice
-import es.pile.core.domain.models.PendingImageImport
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
@@ -21,6 +20,7 @@ import es.pile.core.domain.repositories.PileModelRepository
 import es.pile.core.domain.repositories.SettingsRepository
 import es.pile.core.domain.useCases.GetDocumentSizesUseCase
 import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
+import es.pile.core.domain.useCases.ResizeDocumentsUseCase
 import es.pile.core.ui.util.UiText
 import es.pile.features.documentDetail.domain.helper.DocumentOpener
 import es.pile.features.documentDetail.domain.useCases.MoveDocumentToTrashUseCase
@@ -60,6 +60,7 @@ class PileDetailViewModel(
     private val getPdfUriUseCase: GetPdfUriUseCase,
     private val exportDocumentUseCase: ExportDocumentUseCase,
     private val exportDocumentImagesUseCase: ExportDocumentImagesUseCase,
+    private val resizeDocumentsUseCase: ResizeDocumentsUseCase,
     private val documentOpener: DocumentOpener
 ) : ViewModel() {
     private val _state = MutableStateFlow(PileDetailState())
@@ -150,11 +151,6 @@ class PileDetailViewModel(
 
             is PileDetailEvent.OnImagesImported -> requestImageImport(event.uris)
 
-            is PileDetailEvent.OnImageCompressionConfirmed -> confirmImageImport(event.choice)
-
-            PileDetailEvent.OnImageCompressionDismissed ->
-                _state.update { it.copy(pendingImageImport = null) }
-
             PileDetailEvent.OnCameraClick -> {
                 if (state.value.temporaryDocument != null) {
                     pendingImportAction = { createCameraUri() }
@@ -165,10 +161,6 @@ class PileDetailViewModel(
             }
 
             PileDetailEvent.OnCameraUriConsumed -> dismissCameraUri()
-
-            PileDetailEvent.OnScannerUnavailable -> _state.update {
-                it.copy(errorMessage = UiText.StringResource(R.string.scanner_unavailable))
-            }
 
             is PileDetailEvent.OnHubPicturePicked -> loadHubPictureForCropping(event.uri)
 
@@ -194,6 +186,8 @@ class PileDetailViewModel(
             PileDetailEvent.OnShareSelectedClicked -> shareSelectedDocuments()
 
             PileDetailEvent.OnDeleteSelectedClicked -> deleteSelectedDocuments()
+
+            is PileDetailEvent.OnResizeSelectedClicked -> resizeSelectedDocuments(event.mode)
 
             PileDetailEvent.OnConfirmImport -> {
                 _state.update { it.copy(showDraftWarning = false) }
@@ -468,65 +462,25 @@ class PileDetailViewModel(
     }
 
     /**
-     * First step of an image import: instead of importing right away, the user is
-     * asked whether the images should be compressed (and to which size). The
-     * pre-selected answer follows the Document Resizer settings.
+     * Imports the picked images right away (the draft warning is shown first
+     * when an unsaved draft document exists).
      */
     private fun requestImageImport(uris: List<Uri>) {
-        viewModelScope.launch {
-            val settings = settingsRepository.userSettings.first()
-
-            _state.update {
-                it.copy(
-                    pendingImageImport = PendingImageImport(
-                        uris = uris,
-                        defaultChoice = ImageCompressionChoice(
-                            compress = settings.isDocumentResizerEnabled,
-                            targetSizeKb = settings.documentResizerTargetSizeKb
-                        )
-                    )
-                )
-            }
-        }
-    }
-
-    /** Second step: the compression prompt was answered, the import continues. */
-    private fun confirmImageImport(choice: ImageCompressionChoice) {
-        val pending = state.value.pendingImageImport ?: return
-        _state.update { it.copy(pendingImageImport = null) }
-        rememberResizerChoice(choice)
-
         if (state.value.temporaryDocument != null) {
-            pendingImportAction = { importImages(pending.uris, choice) }
+            pendingImportAction = { importImages(uris) }
             _state.update { it.copy(showDraftWarning = true) }
         } else {
-            importImages(pending.uris, choice)
+            importImages(uris)
         }
     }
 
-    /**
-     * The ON/OFF switch of the Document Resizer prompt is also remembered as the
-     * new default, so the answer given here pre-selects the next import and stays
-     * in sync with Settings -> Document Resizer.
-     */
-    private fun rememberResizerChoice(choice: ImageCompressionChoice) {
-        viewModelScope.launch {
-            settingsRepository.updateDocumentResizerEnabled(choice.compress)
-
-            if (choice.compress) {
-                settingsRepository.updateDocumentResizerTargetSizeKb(choice.targetSizeKb)
-            }
-        }
-    }
-
-    private fun importImages(uris: List<Uri>, compression: ImageCompressionChoice? = null) {
+    private fun importImages(uris: List<Uri>) {
         viewModelScope.launch {
             try {
                 _state.update { it.copy(isLoadingNewDocument = true) }
                 val newDoc = createDocumentUseCase.createFromImages(
                     uris,
-                    initialPileIds = listOf(pileId),
-                    compression = compression
+                    initialPileIds = listOf(pileId)
                 )
                 _navigationEvent.send(newDoc)
             } catch (e: Exception) {
@@ -536,6 +490,43 @@ class PileDetailViewModel(
                 }
             } finally {
                 _state.update { it.copy(isLoadingNewDocument = false) }
+            }
+        }
+    }
+
+    /**
+     * Resizes every selected document with the Document Resizer, saving the
+     * result over the original files or as duplicate documents depending on
+     * the option chosen in the two-option prompt.
+     */
+    private fun resizeSelectedDocuments(mode: DocumentResizeMode) {
+        viewModelScope.launch {
+            val documents = selectedDocuments()
+            if (documents.isEmpty()) return@launch
+
+            _state.update { it.copy(isSelectionWorking = true) }
+
+            val result = resizeDocumentsUseCase(documents, mode)
+
+            _state.update {
+                it.copy(
+                    isSelectionWorking = false,
+                    selectedDocumentIds = emptySet(),
+                    errorMessage = when {
+                        result.resizedCount == 0 ->
+                            UiText.StringResource(R.string.error_resizing_documents)
+
+                        mode == DocumentResizeMode.SAVE_AS_DUPLICATE -> UiText.StringResource(
+                            R.string.documents_resized_duplicates,
+                            result.resizedCount
+                        )
+
+                        else -> UiText.StringResource(
+                            R.string.documents_resized,
+                            result.resizedCount
+                        )
+                    }
+                )
             }
         }
     }

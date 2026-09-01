@@ -95,7 +95,6 @@ import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentSortOrder
 import es.pile.core.domain.models.DocumentViewMode
 import es.pile.core.ui.composables.AlertDraftDocumentWarning
-import es.pile.core.ui.composables.CompressImagesDialog
 import es.pile.core.ui.composables.AlertNewPile
 import es.pile.core.ui.composables.DocumentSelectionTopBar
 import es.pile.core.ui.composables.DocumentViewToggle
@@ -160,8 +159,7 @@ fun HomeScreen(
         onUriConsumed = { viewModel.handleEvent(HomeEvent.OnCameraUriConsumed) },
         onPdfSelected = { viewModel.handleEvent(HomeEvent.OnPdfImported(it)) },
         onImagesSelected = { viewModel.handleEvent(HomeEvent.OnImagesImported(it)) },
-        onCameraClick = { viewModel.handleEvent(HomeEvent.OnCameraClick) },
-        onScannerError = { viewModel.handleEvent(HomeEvent.OnScannerUnavailable) }
+        onCameraClick = { viewModel.handleEvent(HomeEvent.OnCameraClick) }
     )
 
     // Export: the format is always chosen first and the destination folder is
@@ -237,7 +235,10 @@ fun HomeScreen(
                     onClose = { viewModel.handleEvent(HomeEvent.OnSelectionCleared) },
                     onExportFormatSelected = { format -> exportActions.requestExport(format) },
                     onShare = { viewModel.handleEvent(HomeEvent.OnShareSelectedClicked) },
-                    onDelete = { showDeleteSelectionAlert = true }
+                    onDelete = { showDeleteSelectionAlert = true },
+                    onResizeModeSelected = { mode ->
+                        viewModel.handleEvent(HomeEvent.OnResizeSelectedClicked(mode))
+                    }
                 )
             } else {
                 val horizontalPaddingAnimated by animateDpAsState(
@@ -574,18 +575,6 @@ fun HomeScreen(
                     else
                         navigateToEditDocument(tempDocument.id)
                 }
-            }
-        )
-    }
-
-    // Ask whether the picked images should be compressed before importing them.
-    state.pendingImageImport?.let { pending ->
-        CompressImagesDialog(
-            imageCount = pending.uris.size,
-            defaultChoice = pending.defaultChoice,
-            onDismiss = { viewModel.handleEvent(HomeEvent.OnImageCompressionDismissed) },
-            onConfirm = { choice ->
-                viewModel.handleEvent(HomeEvent.OnImageCompressionConfirmed(choice))
             }
         )
     }

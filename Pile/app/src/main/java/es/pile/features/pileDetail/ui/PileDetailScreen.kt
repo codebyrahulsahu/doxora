@@ -69,7 +69,6 @@ import es.pile.R
 import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentSortOrder
 import es.pile.core.ui.composables.AlertDraftDocumentWarning
-import es.pile.core.ui.composables.CompressImagesDialog
 import es.pile.core.ui.composables.AlertEditPile
 import es.pile.core.ui.composables.DocumentSelectionTopBar
 import es.pile.core.ui.composables.DocumentSortMenu
@@ -232,8 +231,7 @@ fun PileDetailContent(
         onUriConsumed = { onEvent(PileDetailEvent.OnCameraUriConsumed) },
         onPdfSelected = { onEvent(PileDetailEvent.OnPdfImported(it)) },
         onImagesSelected = { onEvent(PileDetailEvent.OnImagesImported(it)) },
-        onCameraClick = { onEvent(PileDetailEvent.OnCameraClick) },
-        onScannerError = { onEvent(PileDetailEvent.OnScannerUnavailable) }
+        onCameraClick = { onEvent(PileDetailEvent.OnCameraClick) }
     )
 
     // Export: the format is picked first and the folder is only requested once.
@@ -277,7 +275,10 @@ fun PileDetailContent(
                     onClose = { onEvent(PileDetailEvent.OnSelectionCleared) },
                     onExportFormatSelected = { format -> exportActions.requestExport(format) },
                     onShare = { onEvent(PileDetailEvent.OnShareSelectedClicked) },
-                    onDelete = { showDeleteSelectionAlert = true }
+                    onDelete = { showDeleteSelectionAlert = true },
+                    onResizeModeSelected = { mode ->
+                        onEvent(PileDetailEvent.OnResizeSelectedClicked(mode))
+                    }
                 )
             } else {
                 state.pile?.let { pileModel ->
@@ -530,18 +531,6 @@ fun PileDetailContent(
                 onDismiss = { onEvent(PileDetailEvent.OnHubPictureCropDismissed) },
                 onConfirm = { cropped ->
                     onEvent(PileDetailEvent.OnHubPictureCropConfirmed(cropped))
-                }
-            )
-        }
-
-        // Ask whether the picked images should be compressed before importing them.
-        state.pendingImageImport?.let { pending ->
-            CompressImagesDialog(
-                imageCount = pending.uris.size,
-                defaultChoice = pending.defaultChoice,
-                onDismiss = { onEvent(PileDetailEvent.OnImageCompressionDismissed) },
-                onConfirm = { choice ->
-                    onEvent(PileDetailEvent.OnImageCompressionConfirmed(choice))
                 }
             )
         }

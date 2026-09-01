@@ -6,17 +6,14 @@ import androidx.lifecycle.viewModelScope
 import es.pile.DocumentImage
 import es.pile.DocumentModel
 import es.pile.R
-import es.pile.core.domain.models.ImageCompressionChoice
 import es.pile.core.domain.models.ImageCropData
 import es.pile.core.domain.models.ImageFilterType
 import es.pile.core.domain.models.ImageItem
-import es.pile.core.domain.models.PendingImageImport
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentImageRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.repositories.FileRepository.StorageType
-import es.pile.core.domain.repositories.SettingsRepository
 import es.pile.core.ui.util.UiText
 import es.pile.features.editDocument.domain.useCases.AddPageToDocumentUseCase
 import es.pile.features.editDocument.domain.useCases.FinalizeDocumentUpdateUseCase
@@ -48,8 +45,7 @@ class EditDocumentViewModel(
     private val documentModelRepository: DocumentModelRepository,
     private val bitmapCacheRepository: BitmapCacheRepository,
     private val documentImageRepository: DocumentImageRepository,
-    private val fileRepository: FileRepository,
-    private val settingsRepository: SettingsRepository
+    private val fileRepository: FileRepository
 ) : ViewModel() {
     private var _state = MutableStateFlow(EditDocumentState())
     var state: StateFlow<EditDocumentState> = _state.asStateFlow()
@@ -133,11 +129,6 @@ class EditDocumentViewModel(
             is EditDocumentEvent.OnMoveImage -> moveImage(event.fromIndex, event.toIndex)
 
             is EditDocumentEvent.OnImportImages -> requestImageImport(event.uris)
-
-            is EditDocumentEvent.OnImageCompressionConfirmed -> confirmImageImport(event.choice)
-
-            EditDocumentEvent.OnImageCompressionDismissed ->
-                _state.update { it.copy(pendingImageImport = null) }
             is EditDocumentEvent.OnModeChange -> updateUIMode(event.mode)
 
             is EditDocumentEvent.OnUpdateFilter -> updateFilter(event.index)
@@ -356,54 +347,12 @@ class EditDocumentViewModel(
         removeBitmapFromCacheUseCase.removeImageThumbnails(document, documentImage.id)
     }
 
-    /**
-     * First step of adding new pages: instead of adding them right away, the user
-     * is asked whether the images should be compressed (and to which size). The
-     * pre-selected answer follows the Document Resizer settings.
-     */
+    /** Adds the picked images to the document right away. */
     private fun requestImageImport(uriList: List<Uri>) {
-        viewModelScope.launch {
-            val settings = settingsRepository.userSettings.first()
-
-            _state.update {
-                it.copy(
-                    pendingImageImport = PendingImageImport(
-                        uris = uriList,
-                        defaultChoice = ImageCompressionChoice(
-                            compress = settings.isDocumentResizerEnabled,
-                            targetSizeKb = settings.documentResizerTargetSizeKb
-                        )
-                    )
-                )
-            }
-        }
+        addImages(uriList)
     }
 
-    /** Second step: the compression prompt was answered, the pages are added. */
-    private fun confirmImageImport(choice: ImageCompressionChoice) {
-        val pending = state.value.pendingImageImport ?: return
-        _state.update { it.copy(pendingImageImport = null) }
-        rememberResizerChoice(choice)
-
-        addImages(pending.uris, choice)
-    }
-
-    /**
-     * The ON/OFF switch of the Document Resizer prompt is also remembered as the
-     * new default, so the answer given here pre-selects the next import and stays
-     * in sync with Settings -> Document Resizer.
-     */
-    private fun rememberResizerChoice(choice: ImageCompressionChoice) {
-        viewModelScope.launch {
-            settingsRepository.updateDocumentResizerEnabled(choice.compress)
-
-            if (choice.compress) {
-                settingsRepository.updateDocumentResizerTargetSizeKb(choice.targetSizeKb)
-            }
-        }
-    }
-
-    private fun addImages(uriList: List<Uri>, compression: ImageCompressionChoice? = null) {
+    private fun addImages(uriList: List<Uri>) {
         val currentState = state.value
         val document = currentState.draftDocument ?: return
 
@@ -413,7 +362,7 @@ class EditDocumentViewModel(
 
         viewModelScope.launch {
             val (updatedDocument, imageModels) =
-                addPageToDocumentUseCase(document, uriList, compression)
+                addPageToDocumentUseCase(document, uriList)
 
             val updatedImages = currentState.imageItems.map { it.image } + imageModels
 

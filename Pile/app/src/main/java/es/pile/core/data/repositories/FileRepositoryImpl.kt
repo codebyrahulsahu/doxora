@@ -186,6 +186,91 @@ class FileRepositoryImpl(
         }.awaitAll().filterNotNull()
     }
 
+    override suspend fun resizeStoredImageToTargetSize(
+        storageType: StorageType,
+        documentId: String,
+        imageId: String,
+        targetSizeKb: Int
+    ): Boolean = withContext(ioDispatcher) {
+        val imageFile = getImageFile(storageType, documentId, imageId)
+        if (!imageFile.exists()) return@withContext false
+
+        val targetBytes = (targetSizeKb.toLong() * 1024L).coerceAtLeast(MIN_COMPRESSED_IMAGE_BYTES)
+
+        // Already fits the target: the stored file is left untouched.
+        if (imageFile.length() <= targetBytes) return@withContext true
+
+        try {
+            val compressed = compressStoredImageToTargetSize(imageFile, targetBytes)
+                ?: return@withContext false
+
+            FileOutputStream(imageFile).use { out -> out.write(compressed) }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    override suspend fun copyStoredImageResizedToTargetSize(
+        storageType: StorageType,
+        sourceDocumentId: String,
+        sourceImageId: String,
+        targetDocumentId: String,
+        targetSizeKb: Int
+    ): File? = withContext(ioDispatcher) {
+        val sourceFile = getImageFile(storageType, sourceDocumentId, sourceImageId)
+        if (!sourceFile.exists()) return@withContext null
+
+        val targetDir = getDocumentDirectory(storageType, targetDocumentId)
+            .apply { if (!exists()) mkdirs() }
+        val destFile = File(targetDir, getImageFileName(UUID.randomUUID().toString()))
+
+        val targetBytes = (targetSizeKb.toLong() * 1024L).coerceAtLeast(MIN_COMPRESSED_IMAGE_BYTES)
+
+        try {
+            // Already fits the target: the copy keeps the original bytes.
+            if (sourceFile.length() <= targetBytes) {
+                sourceFile.copyTo(destFile, overwrite = true)
+                return@withContext destFile
+            }
+
+            val compressed = compressStoredImageToTargetSize(sourceFile, targetBytes)
+                ?: return@withContext null
+
+            FileOutputStream(destFile).use { out -> out.write(compressed) }
+            destFile
+        } catch (e: Exception) {
+            e.printStackTrace()
+            if (destFile.exists()) destFile.delete()
+            null
+        }
+    }
+
+    /**
+     * Decodes an image file already stored in the app and compresses it so it
+     * fits [targetBytes].
+     *
+     * The EXIF rotation of the file is baked into the decoded bitmap before
+     * re-encoding, so nothing changes visually when the EXIF data is lost.
+     *
+     * @param file The stored image file to compress.
+     * @param targetBytes Maximum size in bytes of the result.
+     * @return The compressed JPEG bytes, or null when the file cannot be decoded.
+     */
+    private suspend fun compressStoredImageToTargetSize(file: File, targetBytes: Long): ByteArray? {
+        val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: return null
+        val rotation = imageTransformationHelper.getExifRotation(file)
+
+        val finalBitmap = if (rotation != 0) rotateBitmap(bitmap, rotation) else bitmap
+        val compressed = compressBitmapToTargetSize(finalBitmap, targetBytes)
+
+        if (finalBitmap != bitmap) finalBitmap.recycle()
+        bitmap.recycle()
+
+        return compressed
+    }
+
     override suspend fun copyImageToInternalStorage(
         documentId: String,
         documentImage: DocumentImage

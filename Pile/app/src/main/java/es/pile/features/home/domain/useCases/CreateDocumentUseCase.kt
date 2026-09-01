@@ -4,7 +4,6 @@ import android.net.Uri
 import es.pile.DocumentImage
 import es.pile.DocumentModel
 import es.pile.core.domain.models.DocumentStatusConstants
-import es.pile.core.domain.models.ImageCompressionChoice
 import es.pile.core.domain.repositories.DocumentImageRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
 import es.pile.core.domain.repositories.FileRepository
@@ -71,15 +70,12 @@ class CreateDocumentUseCase(
      *
      * @param uris A list of source [Uri]s for the images to be included in the document.
      * @param initialPileIds Optional list of Pile IDs to associate with the new document.
-     * @param compression Explicit compression choice made by the user in the compression
-     * prompt, or null to fall back to the stored settings.
      * @return The newly created [DocumentModel] containing the image IDs.
      * @throws Exception if image processing or database operations fail.
      */
     suspend fun createFromImages(
         uris: List<Uri>,
-        initialPileIds: List<String> = emptyList(),
-        compression: ImageCompressionChoice? = null
+        initialPileIds: List<String> = emptyList()
     ): DocumentModel = withContext(ioDispatcher) {
         cleanupExistingTemporaryDocument()
 
@@ -89,8 +85,7 @@ class CreateDocumentUseCase(
             val imageFiles = saveImagesUseCase(
                 storageType = FileRepository.StorageType.PERSISTENT,
                 uris = uris,
-                documentId = newDocument.id,
-                compression = compression
+                documentId = newDocument.id
             )
 
             val documentImages = imageFiles.map { file ->

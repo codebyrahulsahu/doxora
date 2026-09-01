@@ -54,8 +54,6 @@ class SettingsOverviewViewModel(
             isLocalAiEnabled = userSettings.isLocalAiEnabled,
             selectedModel = userSettings.selectedModel,
             imageResolution = userSettings.imageResolution,
-            isDocumentResizerEnabled = userSettings.isDocumentResizerEnabled,
-            documentResizerTargetSizeKb = userSettings.documentResizerTargetSizeKb,
             profileName = userSettings.profileName,
             profileEmail = userSettings.profileEmail,
             profilePictureFile = profilePictureFile,
@@ -76,8 +74,6 @@ class SettingsOverviewViewModel(
         when (event) {
             SettingsOverviewEvent.OnBackClicked -> {}
             SettingsOverviewEvent.OnResolutionClicked -> {}
-            SettingsOverviewEvent.OnDocumentResizerClicked -> {}
-            SettingsOverviewEvent.OnDocumentResizerToggled -> updateDocumentResizer()
 
             is SettingsOverviewEvent.OnThemeChanged -> updateTheme(event.newTheme)
 
@@ -129,12 +125,6 @@ class SettingsOverviewViewModel(
     private fun updateLocalAi() {
         viewModelScope.launch {
             settingsRepository.updateLocalAi(!state.value.isLocalAiEnabled)
-        }
-    }
-
-    private fun updateDocumentResizer() {
-        viewModelScope.launch {
-            settingsRepository.updateDocumentResizerEnabled(!state.value.isDocumentResizerEnabled)
         }
     }
 

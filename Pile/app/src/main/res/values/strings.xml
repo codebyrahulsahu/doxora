@@ -117,9 +117,6 @@
     <string name="error_exporting_images">Error exporting the images</string>
     <string name="documents_exported_to_folder">%1$d documents exported</string>
 
-    <!-- Built in document scanner -->
-    <string name="scanner_unavailable">The scanner is not available, opening the camera</string>
-
     <!-- Hub picture -->
     <string name="hub_picture">Hub picture</string>
     <string name="upload_hub_picture">Upload a profile picture</string>
@@ -312,29 +309,13 @@ Email: %3$s</string>
     <string name="storage_saver_body">Save additional files at a slightly lower quality. Imported PDFs will retain their original quality</string>
 
     <string name="document_resizer">Document Resizer</string>
-    <string name="document_resizer_toggle_title">Compress documents to a custom size</string>
-    <string name="document_resizer_toggle_body">Each new document page or scan is compressed to the target size while keeping the best possible quality.</string>
-    <string name="document_resizer_target_size">Target size</string>
-    <string name="document_resizer_target_size_body">New documents will be compressed to about %1$s per page or scan.</string>
-    <string name="document_resizer_size_hint">Pick a size between 16 KB and 100 MB. Images that already fit are stored unchanged.</string>
-    <string name="size_in_kb">Size in KB</string>
-    <string name="size_in_mb">Size in MB</string>
-    <string name="kb">KB</string>
-    <string name="mb">MB</string>
-
-    <string name="compress_images_title">Compress images?</string>
-    <string name="compress_images_body">You are about to import %1$d image(s). You can compress them to save storage, or keep them at their original size.</string>
-    <string name="keep_original_size">Keep original size</string>
-    <string name="keep_original_size_body">Best quality, larger files.</string>
-    <string name="compress_images_option">Compress images</string>
-    <string name="compress_images_option_body">Pick the maximum size per image.</string>
-    <string name="compression_custom">Custom</string>
-    <string name="document_resizer_switch_title">Document Resizer</string>
-    <string name="document_resizer_switch_on">On · images are resized</string>
-    <string name="document_resizer_switch_off">Off · images keep their original size</string>
-    <string name="document_resizer_prompt_body">%1$d image(s) selected. Resize them to a maximum size per image, or import them untouched.</string>
-    <string name="document_resizer_max_size">Maximum size per image</string>
-    <string name="import_images_action">Import</string>
+    <string name="document_resizer_options_body">Compress the pages of the selected documents while keeping the best possible quality. Choose how to save the result:</string>
+    <string name="resize">Resize</string>
+    <string name="resize_save_as_original">Save as original file in app</string>
+    <string name="resize_save_as_duplicate">Save as duplicate file</string>
+    <string name="documents_resized">%1$d documents resized</string>
+    <string name="documents_resized_duplicates">%1$d resized duplicates created</string>
+    <string name="error_resizing_documents">The selected documents could not be resized</string>
 
     <string name="export_documents">Export</string>
     <string name="export_folder">Export folder</string>
