@@ -2,10 +2,8 @@ package es.pile.features.editDocument.ui
 
 import android.net.Uri
 import es.pile.DocumentModel
-import es.pile.core.domain.models.ImageCompressionChoice
 import es.pile.core.domain.models.ImageFilterType
 import es.pile.core.domain.models.ImageItem
-import es.pile.core.domain.models.PendingImageImport
 import es.pile.core.ui.util.UiText
 import es.pile.features.editDocument.domain.models.ExtendedCropController
 
@@ -18,8 +16,6 @@ data class EditDocumentState(
     val selectedImageIndex: Int = 0,
     val uiMode: EditDocumentMode = EditDocumentMode.SCROLL,
     val cropControllers: Map<String, ExtendedCropController> = emptyMap(),
-    /** Images picked by the user, waiting for the compression prompt to be answered. */
-    val pendingImageImport: PendingImageImport? = null,
     val isLoadingNewImage: Boolean = false,
     val showUnsavedChangesAlert: Boolean = false,
     val isDocumentModified: Boolean = false,
@@ -43,12 +39,6 @@ sealed interface EditDocumentEvent {
     data class OnMoveImage(val fromIndex: Int, val toIndex: Int) : EditDocumentEvent
 
     data class OnImportImages(val uris: List<Uri>) : EditDocumentEvent
-
-    /** The user answered the compression prompt: the new pages are added with the choice. */
-    data class OnImageCompressionConfirmed(val choice: ImageCompressionChoice) : EditDocumentEvent
-
-    /** The compression prompt was cancelled: no page is added. */
-    data object OnImageCompressionDismissed : EditDocumentEvent
     data class OnModeChange(val mode: EditDocumentMode) : EditDocumentEvent
     
     data class OnUpdateFilter(val index: Int) : EditDocumentEvent

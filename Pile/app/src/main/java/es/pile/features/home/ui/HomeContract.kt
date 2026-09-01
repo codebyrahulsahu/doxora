@@ -5,10 +5,9 @@ import es.pile.DocumentModel
 import es.pile.PileModel
 import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentExportFormat
+import es.pile.core.domain.models.DocumentResizeMode
 import es.pile.core.domain.models.DocumentSortOrder
 import es.pile.core.domain.models.DocumentViewMode
-import es.pile.core.domain.models.ImageCompressionChoice
-import es.pile.core.domain.models.PendingImageImport
 import es.pile.core.ui.util.UiText
 import java.io.File
 
@@ -25,8 +24,6 @@ data class HomeState(
     val sortOrder: DocumentSortOrder = DocumentSortOrder.NEWEST,
     val viewMode: DocumentViewMode = DocumentViewMode.LIST,
     val cameraUri: Uri? = null,
-    /** Images picked by the user, waiting for the compression prompt to be answered. */
-    val pendingImageImport: PendingImageImport? = null,
     val showDraftWarning: Boolean = false,
     val isLoadingNewDocument: Boolean = false,
     val isInitialLoading: Boolean = true,
@@ -56,17 +53,8 @@ sealed interface HomeEvent {
 
     data class OnPdfImported(val uri: Uri) : HomeEvent
     data class OnImagesImported(val uris: List<Uri>) : HomeEvent
-
-    /** The user answered the compression prompt: the import continues with the choice. */
-    data class OnImageCompressionConfirmed(val choice: ImageCompressionChoice) : HomeEvent
-
-    /** The compression prompt was cancelled: nothing is imported. */
-    data object OnImageCompressionDismissed : HomeEvent
     data object OnCameraClick : HomeEvent
     data object OnCameraUriConsumed : HomeEvent
-
-    /** The built in scanner could not be started, the camera is used instead. */
-    data object OnScannerUnavailable : HomeEvent
 
     data object OnConfirmImport : HomeEvent
     data object OnDismissDraftWarning : HomeEvent
@@ -92,6 +80,12 @@ sealed interface HomeEvent {
     data object OnShareSelectedClicked : HomeEvent
     data object OnDeleteSelectedClicked : HomeEvent
     data object OnSelectedDocumentsDeleted : HomeEvent
+
+    /**
+     * Resizes every selected document with the Document Resizer, saving the
+     * result as chosen in the two-option prompt.
+     */
+    data class OnResizeSelectedClicked(val mode: DocumentResizeMode) : HomeEvent
 
     data object OnErrorDismissed : HomeEvent
 }

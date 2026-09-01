@@ -158,6 +158,48 @@ interface FileRepository {
     ): List<File>
 
     /**
+     * Compresses an image already stored for a document so it fits [targetSizeKb],
+     * replacing the stored file in place ("Save as original file in app").
+     *
+     * The original dimensions and the highest possible quality are kept, and
+     * images that already fit the target size are left untouched.
+     *
+     * @param storageType The type of storage (PERSISTENT or CACHE).
+     * @param documentId The unique identifier of the document that owns the image.
+     * @param imageId The unique identifier of the stored image file.
+     * @param targetSizeKb Maximum file size in kilobytes for the stored image.
+     * @return True when the image was processed (resized or already fitting),
+     * false when the file is missing or could not be compressed.
+     */
+    suspend fun resizeStoredImageToTargetSize(
+        storageType: StorageType = StorageType.PERSISTENT,
+        documentId: String,
+        imageId: String,
+        targetSizeKb: Int
+    ): Boolean
+
+    /**
+     * Copies an image already stored for a document into the storage of
+     * [targetDocumentId], compressed to fit [targetSizeKb] ("Save as duplicate
+     * file"). The source image is left untouched.
+     *
+     * @param storageType The type of storage (PERSISTENT or CACHE).
+     * @param sourceDocumentId Document that owns the source image.
+     * @param sourceImageId The unique identifier of the source image file.
+     * @param targetDocumentId Document where the compressed copy is stored.
+     * @param targetSizeKb Maximum file size in kilobytes for the copy.
+     * @return The created [File] (its name is the id of the new image), or
+     * null when the source is missing or could not be processed.
+     */
+    suspend fun copyStoredImageResizedToTargetSize(
+        storageType: StorageType = StorageType.PERSISTENT,
+        sourceDocumentId: String,
+        sourceImageId: String,
+        targetDocumentId: String,
+        targetSizeKb: Int
+    ): File?
+
+    /**
      * Copies an image to the internal storage of the app.
      *
      * @param documentId The unique identifier of the document where the image will be stored.

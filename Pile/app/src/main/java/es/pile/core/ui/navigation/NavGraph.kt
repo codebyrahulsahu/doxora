@@ -23,7 +23,6 @@ import es.pile.features.pileDetail.ui.PileDetailScreen
 import es.pile.features.recycleBin.ui.RecycleBinScreen
 import es.pile.features.search.ui.SearchScreen
 import es.pile.features.settings.ui.overview.SettingsOverviewScreen
-import es.pile.features.settings.ui.resizer.SettingsDocumentResizerScreen
 import es.pile.features.settings.ui.resolution.SettingsResolutionScreen
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -188,9 +187,6 @@ fun PileNavigation(modifier: Modifier = Modifier, backStack: NavBackStack<NavKey
                     navigateToSettingsResolution = {
                         backStack.add(Pane.SettingsResolution)
                     },
-                    navigateToSettingsDocumentResizer = {
-                        backStack.add(Pane.SettingsDocumentResizer)
-                    },
                     navigateToFavorites = { backStack.add(Pane.Favorites) },
                     navigateToRecycleBin = { backStack.add(Pane.RecycleBin) }
                 )
@@ -198,12 +194,6 @@ fun PileNavigation(modifier: Modifier = Modifier, backStack: NavBackStack<NavKey
 
             entry<Pane.SettingsResolution> {
                 SettingsResolutionScreen(
-                    popBackStack = backStack::removeLastOrNull
-                )
-            }
-
-            entry<Pane.SettingsDocumentResizer> {
-                SettingsDocumentResizerScreen(
                     popBackStack = backStack::removeLastOrNull
                 )
             }

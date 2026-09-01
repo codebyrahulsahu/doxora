@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.PhotoSizeSelectLarge
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import es.pile.R
 import es.pile.core.domain.models.DocumentExportFormat
+import es.pile.core.domain.models.DocumentResizeMode
 
 /**
  * Top bar shown while the multi selection mode is active (both in the home
@@ -45,6 +47,11 @@ import es.pile.core.domain.models.DocumentExportFormat
  *
  * The Export action always opens the [ExportFormatMenu] with the three
  * supported formats before anything is exported.
+ *
+ * The Document Resizer lives here (and only here): it is offered exclusively
+ * while a document is actively selected. Tapping it opens the
+ * [DocumentResizeOptionsDialog] with exactly two options: save the resized
+ * pages as the original file in the app, or save them as a duplicate file.
  */
 @Composable
 fun DocumentSelectionTopBar(
@@ -54,9 +61,11 @@ fun DocumentSelectionTopBar(
     onExportFormatSelected: (DocumentExportFormat) -> Unit,
     onShare: () -> Unit,
     onDelete: () -> Unit,
+    onResizeModeSelected: (DocumentResizeMode) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var exportMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    var resizeOptionsExpanded by rememberSaveable { mutableStateOf(false) }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -114,6 +123,14 @@ fun DocumentSelectionTopBar(
                 )
 
                 SelectionActionButton(
+                    icon = Icons.Filled.PhotoSizeSelectLarge,
+                    label = stringResource(R.string.resize),
+                    onClick = { resizeOptionsExpanded = true },
+                    enabled = enabled,
+                    modifier = Modifier.weight(1f)
+                )
+
+                SelectionActionButton(
                     icon = Icons.Filled.Delete,
                     label = stringResource(R.string.delete),
                     onClick = onDelete,
@@ -123,6 +140,17 @@ fun DocumentSelectionTopBar(
                 )
             }
         }
+    }
+
+    // Document Resizer prompt: exactly two options for the resized documents.
+    if (resizeOptionsExpanded) {
+        DocumentResizeOptionsDialog(
+            onDismiss = { resizeOptionsExpanded = false },
+            onModeSelected = { mode ->
+                resizeOptionsExpanded = false
+                onResizeModeSelected(mode)
+            }
+        )
     }
 }
 

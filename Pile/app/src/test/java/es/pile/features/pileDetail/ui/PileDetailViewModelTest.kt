@@ -14,7 +14,7 @@ import es.pile.core.domain.repositories.PileModelRepository
 import es.pile.core.domain.repositories.SettingsRepository
 import es.pile.core.domain.useCases.GetDocumentSizesUseCase
 import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
-import es.pile.core.domain.models.ImageCompressionChoice
+import es.pile.core.domain.useCases.ResizeDocumentsUseCase
 import es.pile.core.domain.models.UserSettings
 import es.pile.features.documentDetail.domain.helper.DocumentOpener
 import es.pile.features.documentDetail.domain.useCases.MoveDocumentToTrashUseCase
@@ -68,6 +68,7 @@ class PileDetailViewModelTest {
     private val getPdfUriUseCase: GetPdfUriUseCase = mockk(relaxed = true)
     private val exportDocumentUseCase: ExportDocumentUseCase = mockk(relaxed = true)
     private val exportDocumentImagesUseCase: ExportDocumentImagesUseCase = mockk(relaxed = true)
+    private val resizeDocumentsUseCase: ResizeDocumentsUseCase = mockk(relaxed = true)
     private val documentOpener: DocumentOpener = mockk(relaxed = true)
 
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -113,6 +114,7 @@ class PileDetailViewModelTest {
             getPdfUriUseCase,
             exportDocumentUseCase,
             exportDocumentImagesUseCase,
+            resizeDocumentsUseCase,
             documentOpener
         )
 
@@ -124,18 +126,16 @@ class PileDetailViewModelTest {
     }
 
     @Test
-    fun `OnImagesImported should ask for compression and import on confirmation`() = runTest {
+    fun `OnImagesImported should import the images right away`() = runTest {
         // Given
         val mockUris = listOf(mockk<Uri>())
         val mockDoc = mockk<DocumentModel> {
             every { id } returns "new-doc-id"
         }
-        val compressionChoice = ImageCompressionChoice.original()
         coEvery {
             createDocumentUseCase.createFromImages(
                 mockUris,
-                initialPileIds = listOf(pileId),
-                compression = compressionChoice
+                initialPileIds = listOf(pileId)
             )
         } returns mockDoc
 
@@ -157,18 +157,13 @@ class PileDetailViewModelTest {
             getPdfUriUseCase,
             exportDocumentUseCase,
             exportDocumentImagesUseCase,
+            resizeDocumentsUseCase,
             documentOpener
         )
 
-        // When & Then
+        // When & Then: no compression prompt, the import starts immediately.
         viewModel.navigationEvent.test {
-            // The images are not imported right away: the compression prompt is shown first.
             viewModel.handleEvent(PileDetailEvent.OnImagesImported(mockUris))
-            assertEquals(mockUris, viewModel.state.value.pendingImageImport?.uris)
-
-            // Answering the prompt performs the actual import.
-            viewModel.handleEvent(PileDetailEvent.OnImageCompressionConfirmed(compressionChoice))
-            assertEquals(null, viewModel.state.value.pendingImageImport)
             assertEquals(mockDoc, awaitItem())
         }
     }
@@ -201,6 +196,7 @@ class PileDetailViewModelTest {
             getPdfUriUseCase,
             exportDocumentUseCase,
             exportDocumentImagesUseCase,
+            resizeDocumentsUseCase,
             documentOpener
         )
 
@@ -246,6 +242,7 @@ class PileDetailViewModelTest {
             getPdfUriUseCase,
             exportDocumentUseCase,
             exportDocumentImagesUseCase,
+            resizeDocumentsUseCase,
             documentOpener
         )
 
@@ -260,53 +257,4 @@ class PileDetailViewModelTest {
         coVerify(exactly = 0) { fileRepository.saveProfilePicture(any<Bitmap>(), any()) }
     }
 
-    @Test
-    fun `answering the resizer prompt is remembered in the settings`() = runTest {
-        // Given
-        val mockUris = listOf(mockk<Uri>())
-        val mockDoc = mockk<DocumentModel> {
-            every { id } returns "new-doc-id"
-        }
-        val choice = ImageCompressionChoice(compress = true, targetSizeKb = 1024)
-
-        coEvery {
-            createDocumentUseCase.createFromImages(
-                mockUris,
-                initialPileIds = listOf(pileId),
-                compression = choice
-            )
-        } returns mockDoc
-
-        val viewModel = PileDetailViewModel(
-            pileId,
-            requestCoverThumbnailUseCase,
-            createDocumentUseCase,
-            updatePileUseCase,
-            deletePileUseCase,
-            getDocumentSizesUseCase,
-            pileModelRepository,
-            documentModelRepository,
-            bitmapCacheRepository,
-            fileRepository,
-            favoritesRepository,
-            documentLockRepository,
-            settingsRepository,
-            moveDocumentToTrashUseCase,
-            getPdfUriUseCase,
-            exportDocumentUseCase,
-            exportDocumentImagesUseCase,
-            documentOpener
-        )
-
-        // When
-        viewModel.navigationEvent.test {
-            viewModel.handleEvent(PileDetailEvent.OnImagesImported(mockUris))
-            viewModel.handleEvent(PileDetailEvent.OnImageCompressionConfirmed(choice))
-            assertEquals(mockDoc, awaitItem())
-        }
-
-        // Then: the ON/OFF switch and the size become the new defaults
-        coVerify { settingsRepository.updateDocumentResizerEnabled(true) }
-        coVerify { settingsRepository.updateDocumentResizerTargetSizeKb(1024) }
-    }
 }

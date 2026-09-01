@@ -23,8 +23,10 @@ import androidx.activity.result.contract.ActivityResultContract
  *    understand them open in document mode, the rest simply ignore them and
  *    take a normal picture.
  *
- * When neither is available the caller falls back to the on-device document
- * scanner of Google Play services (see [rememberDocumentImportController]).
+ * When neither is available the plain device camera is opened, still asking
+ * for its document mode through the capture hints (see
+ * [rememberDocumentImportController]). The Google Play services document
+ * scanner is never used.
  */
 object NativeDocumentCamera {
 

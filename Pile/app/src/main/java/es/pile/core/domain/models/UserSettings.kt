@@ -10,9 +10,9 @@ data class UserSettings(
     val selectedModel: String? = null,
     val imageResolution: ImageResolution = ImageResolution.ORIGINAL,
     /**
-     * Whether new document images are compressed to a custom target file size
-     * by the Document Resizer (keeps the best possible quality while fitting
-     * the configured [documentResizerTargetSizeKb]).
+     * Whether new document images are compressed at import time. Kept only for
+     * backwards compatibility with stored settings and backups: the Document
+     * Resizer now runs on selected documents instead of on every import.
      */
     val isDocumentResizerEnabled: Boolean = false,
     /** Custom target file size used by the Document Resizer, in kilobytes. */

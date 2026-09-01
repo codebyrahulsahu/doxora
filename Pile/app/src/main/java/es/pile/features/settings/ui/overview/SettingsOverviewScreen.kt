@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -80,7 +79,6 @@ import es.pile.features.settings.ui.composables.SUPPORT_EMAIL
 import es.pile.features.settings.ui.composables.SUPPORT_GITHUB
 import es.pile.features.settings.ui.composables.SUPPORT_INSTAGRAM
 import es.pile.features.settings.ui.composables.SupportContactsCard
-import es.pile.features.settings.ui.resizer.formatDocumentResizerTargetSize
 import java.io.File
 import org.koin.androidx.compose.koinViewModel
 
@@ -98,7 +96,6 @@ fun SettingsOverviewScreen(
     viewModel: SettingsOverviewViewModel = koinViewModel(),
     popBackStack: () -> Unit,
     navigateToSettingsResolution: () -> Unit,
-    navigateToSettingsDocumentResizer: () -> Unit = {},
     navigateToFavorites: () -> Unit = {},
     navigateToRecycleBin: () -> Unit = {}
 ) {
@@ -159,7 +156,6 @@ fun SettingsOverviewScreen(
         state = state,
         navigateToFavorites = navigateToFavorites,
         navigateToRecycleBin = navigateToRecycleBin,
-        onDocumentResizerClick = navigateToSettingsDocumentResizer,
         onChooseProfilePictureFromGallery = launchProfilePicturePicker,
         onPickExportFolder = {
             exportFolderLauncher.launch(state.exportFolderUri?.let(Uri::parse))
@@ -190,8 +186,6 @@ fun SettingsOverviewScreen(
             when (event) {
                 is SettingsOverviewEvent.OnBackClicked -> popBackStack()
                 is SettingsOverviewEvent.OnResolutionClicked -> navigateToSettingsResolution()
-                is SettingsOverviewEvent.OnDocumentResizerClicked ->
-                    navigateToSettingsDocumentResizer()
                 else -> viewModel.handleEvent(event)
             }
         }
@@ -253,7 +247,6 @@ fun SettingsOverviewContent(
     onEvent: (SettingsOverviewEvent) -> Unit,
     navigateToFavorites: () -> Unit = {},
     navigateToRecycleBin: () -> Unit = {},
-    onDocumentResizerClick: () -> Unit = {},
     onChooseProfilePictureFromGallery: () -> Unit = {},
     onPickExportFolder: () -> Unit = {},
     onExportBackup: () -> Unit = {},
@@ -325,13 +318,6 @@ fun SettingsOverviewContent(
                 ResolutionSection(
                     imageResolution = state.imageResolution,
                     onResolutionChange = { onEvent(SettingsOverviewEvent.OnResolutionClicked) }
-                )
-
-                DocumentResizerSection(
-                    isEnabled = state.isDocumentResizerEnabled,
-                    targetSizeKb = state.documentResizerTargetSizeKb,
-                    onToggle = { onEvent(SettingsOverviewEvent.OnDocumentResizerToggled) },
-                    onConfigure = { onEvent(SettingsOverviewEvent.OnDocumentResizerClicked) }
                 )
 
                 LibrarySection(
@@ -590,35 +576,6 @@ private fun ResolutionSection(
             title = stringResource(R.string.document_resolution),
             subtitle = subtitle,
             onAction = onResolutionChange
-        )
-    }
-}
-
-/**
- * Document Resizer: a separate toggle that compresses every new document page or
- * scan to a custom target size while keeping the best possible quality.
- */
-@Composable
-private fun DocumentResizerSection(
-    modifier: Modifier = Modifier,
-    isEnabled: Boolean,
-    targetSizeKb: Int,
-    onToggle: () -> Unit,
-    onConfigure: () -> Unit
-) {
-    SettingsSection(modifier = modifier, title = stringResource(R.string.document_resizer)) {
-        SettingsItem(
-            itemPosition = ItemPosition.TOP,
-            title = stringResource(R.string.document_resizer_toggle_title),
-            checked = isEnabled,
-            onAction = onToggle
-        )
-
-        SettingsItem(
-            itemPosition = ItemPosition.BOTTOM,
-            title = stringResource(R.string.document_resizer_target_size),
-            subtitle = formatDocumentResizerTargetSize(targetSizeKb),
-            onAction = onConfigure
         )
     }
 }

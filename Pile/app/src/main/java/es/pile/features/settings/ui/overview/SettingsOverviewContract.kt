@@ -13,8 +13,6 @@ data class SettingsOverviewState(
     val isLocalAiEnabled: Boolean = false,
     val selectedModel: String? = null,
     val imageResolution: ImageResolution = ImageResolution.LOW,
-    val isDocumentResizerEnabled: Boolean = false,
-    val documentResizerTargetSizeKb: Int = 512,
     val profileName: String? = null,
     val profileEmail: String? = null,
     val profilePictureFile: File? = null,
@@ -33,8 +31,6 @@ data class SettingsOverviewState(
 sealed interface SettingsOverviewEvent {
     data object OnBackClicked : SettingsOverviewEvent
     data object OnResolutionClicked : SettingsOverviewEvent
-    data object OnDocumentResizerClicked : SettingsOverviewEvent
-    data object OnDocumentResizerToggled : SettingsOverviewEvent
     data class OnThemeChanged(val newTheme: AppTheme) : SettingsOverviewEvent
     data object OnMaterialColorToggled : SettingsOverviewEvent
     data object OnLocalAiToggled : SettingsOverviewEvent

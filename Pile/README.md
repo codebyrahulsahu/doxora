@@ -27,7 +27,7 @@ The project is built with **Kotlin** and **Jetpack Compose**, following a **Clea
 - Per document PIN lock
 - Recycle Bin with 30 days automatic deletion
 - Export documents as PDF or JPG/PNG images
-- Document Resizer: compress new documents to a custom size (KB/MB) keeping the best possible quality
+- Document Resizer: shown at the top of the screen only while a document is selected; it offers exactly two options — save as original file in app or save as duplicate file
 
 
 ## Tech Stack
