@@ -94,6 +94,7 @@ import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentSortOrder
 import es.pile.core.domain.models.DocumentViewMode
 import es.pile.core.ui.composables.AlertDraftDocumentWarning
+import es.pile.core.ui.composables.CompressImagesDialog
 import es.pile.core.ui.composables.AlertNewPile
 import es.pile.core.ui.composables.DocumentSelectionTopBar
 import es.pile.core.ui.composables.DocumentViewToggle
@@ -572,6 +573,18 @@ fun HomeScreen(
                     else
                         navigateToEditDocument(tempDocument.id)
                 }
+            }
+        )
+    }
+
+    // Ask whether the picked images should be compressed before importing them.
+    state.pendingImageImport?.let { pending ->
+        CompressImagesDialog(
+            imageCount = pending.uris.size,
+            defaultChoice = pending.defaultChoice,
+            onDismiss = { viewModel.handleEvent(HomeEvent.OnImageCompressionDismissed) },
+            onConfirm = { choice ->
+                viewModel.handleEvent(HomeEvent.OnImageCompressionConfirmed(choice))
             }
         )
     }

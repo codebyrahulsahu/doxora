@@ -1,6 +1,7 @@
 package es.pile.core.domain.useCases
 
 import android.net.Uri
+import es.pile.core.domain.models.ImageCompressionChoice
 import es.pile.core.domain.models.ImageResolution
 import es.pile.core.domain.models.UserSettings
 import es.pile.core.domain.repositories.FileRepository
@@ -109,6 +110,52 @@ class SaveImagesUseCaseTest {
 
         // When
         val result = saveImagesUseCase(storageType, uris, docId)
+
+        // Then
+        assertEquals(mockFiles, result)
+    }
+
+    @Test
+    fun `invoke should honour an explicit compression choice over the settings`() = runTest {
+        // Given
+        val storageType = FileRepository.StorageType.PERSISTENT
+        val uris = listOf(mockk<Uri>())
+        val docId = "doc5"
+        val mockFiles = listOf(File("img5.jpg"))
+        val choice = ImageCompressionChoice(compress = true, targetSizeKb = 300)
+
+        // Settings say "no compression at all", the explicit choice wins anyway.
+        every { settingsRepository.userSettings } returns flowOf(
+            UserSettings(imageResolution = ImageResolution.ORIGINAL, isDocumentResizerEnabled = false)
+        )
+        coEvery {
+            fileRepository.saveImagesToTargetSize(storageType, uris, docId, 300)
+        } returns mockFiles
+
+        // When
+        val result = saveImagesUseCase(storageType, uris, docId, compression = choice)
+
+        // Then
+        assertEquals(mockFiles, result)
+    }
+
+    @Test
+    fun `invoke should keep originals when the user explicitly refuses compression`() = runTest {
+        // Given
+        val storageType = FileRepository.StorageType.PERSISTENT
+        val uris = listOf(mockk<Uri>())
+        val docId = "doc6"
+        val mockFiles = listOf(File("img6.jpg"))
+        val choice = ImageCompressionChoice.original()
+
+        // Settings say "compress", the explicit "keep original" answer wins anyway.
+        every { settingsRepository.userSettings } returns flowOf(
+            UserSettings(isDocumentResizerEnabled = true, documentResizerTargetSizeKb = 512)
+        )
+        coEvery { fileRepository.saveImageToStorage(storageType, uris, docId) } returns mockFiles
+
+        // When
+        val result = saveImagesUseCase(storageType, uris, docId, compression = choice)
 
         // Then
         assertEquals(mockFiles, result)

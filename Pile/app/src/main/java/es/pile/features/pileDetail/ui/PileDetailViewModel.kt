@@ -9,6 +9,8 @@ import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentExportFormat
 import es.pile.core.domain.models.DocumentStatusConstants.SAVED
 import es.pile.core.domain.models.DocumentStatusConstants.TEMPORARY
+import es.pile.core.domain.models.ImageCompressionChoice
+import es.pile.core.domain.models.PendingImageImport
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
@@ -145,14 +147,12 @@ class PileDetailViewModel(
                 }
             }
 
-            is PileDetailEvent.OnImagesImported -> {
-                if (state.value.temporaryDocument != null) {
-                    pendingImportAction = { importImages(event.uris) }
-                    _state.update { it.copy(showDraftWarning = true) }
-                } else {
-                    importImages(event.uris)
-                }
-            }
+            is PileDetailEvent.OnImagesImported -> requestImageImport(event.uris)
+
+            is PileDetailEvent.OnImageCompressionConfirmed -> confirmImageImport(event.choice)
+
+            PileDetailEvent.OnImageCompressionDismissed ->
+                _state.update { it.copy(pendingImageImport = null) }
 
             PileDetailEvent.OnCameraClick -> {
                 if (state.value.temporaryDocument != null) {
@@ -434,11 +434,51 @@ class PileDetailViewModel(
         }
     }
 
-    private fun importImages(uris: List<Uri>) {
+    /**
+     * First step of an image import: instead of importing right away, the user is
+     * asked whether the images should be compressed (and to which size). The
+     * pre-selected answer follows the Document Resizer settings.
+     */
+    private fun requestImageImport(uris: List<Uri>) {
+        viewModelScope.launch {
+            val settings = settingsRepository.userSettings.first()
+
+            _state.update {
+                it.copy(
+                    pendingImageImport = PendingImageImport(
+                        uris = uris,
+                        defaultChoice = ImageCompressionChoice(
+                            compress = settings.isDocumentResizerEnabled,
+                            targetSizeKb = settings.documentResizerTargetSizeKb
+                        )
+                    )
+                )
+            }
+        }
+    }
+
+    /** Second step: the compression prompt was answered, the import continues. */
+    private fun confirmImageImport(choice: ImageCompressionChoice) {
+        val pending = state.value.pendingImageImport ?: return
+        _state.update { it.copy(pendingImageImport = null) }
+
+        if (state.value.temporaryDocument != null) {
+            pendingImportAction = { importImages(pending.uris, choice) }
+            _state.update { it.copy(showDraftWarning = true) }
+        } else {
+            importImages(pending.uris, choice)
+        }
+    }
+
+    private fun importImages(uris: List<Uri>, compression: ImageCompressionChoice? = null) {
         viewModelScope.launch {
             try {
                 _state.update { it.copy(isLoadingNewDocument = true) }
-                val newDoc = createDocumentUseCase.createFromImages(uris, listOf(pileId))
+                val newDoc = createDocumentUseCase.createFromImages(
+                    uris,
+                    initialPileIds = listOf(pileId),
+                    compression = compression
+                )
                 _navigationEvent.send(newDoc)
             } catch (e: Exception) {
                 Napier.e("Error importing images from Pile Detail", e)

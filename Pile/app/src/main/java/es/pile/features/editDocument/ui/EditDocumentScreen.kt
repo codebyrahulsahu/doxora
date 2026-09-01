@@ -88,6 +88,7 @@ import es.pile.R
 import es.pile.core.domain.models.ImageCropData
 import es.pile.core.domain.models.ImageFilterType
 import es.pile.core.domain.models.ImageItem
+import es.pile.core.ui.composables.CompressImagesDialog
 import es.pile.core.ui.composables.LoadingAlert
 import es.pile.core.ui.composables.LoadingWrapper
 import es.pile.core.ui.controllers.rememberDocumentImportController
@@ -354,6 +355,18 @@ fun EditDocumentContent(
 
     if (state.isLoadingNewImage) {
         LoadingAlert(stringResource(R.string.adding_images))
+    }
+
+    // Ask whether the picked images should be compressed before adding the pages.
+    state.pendingImageImport?.let { pending ->
+        CompressImagesDialog(
+            imageCount = pending.uris.size,
+            defaultChoice = pending.defaultChoice,
+            onDismiss = { onEvent(EditDocumentEvent.OnImageCompressionDismissed) },
+            onConfirm = { choice ->
+                onEvent(EditDocumentEvent.OnImageCompressionConfirmed(choice))
+            }
+        )
     }
 
     if (state.showUnsavedChangesAlert) {

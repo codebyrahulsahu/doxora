@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.pile.R
 import es.pile.core.domain.models.AppTheme
+import es.pile.core.domain.repositories.AppPreferencesRepository
 import es.pile.core.domain.repositories.BackupSummary
 import es.pile.core.domain.repositories.LocalBackupRepository
 import es.pile.core.domain.repositories.SettingsRepository
@@ -25,7 +26,8 @@ import java.io.File
 class SettingsOverviewViewModel(
     private val settingsRepository: SettingsRepository,
     private val localBackupRepository: LocalBackupRepository,
-    private val fileRepository: FileRepository
+    private val fileRepository: FileRepository,
+    private val appPreferencesRepository: AppPreferencesRepository
 ) : ViewModel() {
 
     /** Transient state of the local backup / restore operations. */
@@ -36,9 +38,10 @@ class SettingsOverviewViewModel(
 
     val state: StateFlow<SettingsOverviewState> = combine(
         settingsRepository.userSettings,
+        appPreferencesRepository.appPreferences,
         backupState,
         profilePictureState
-    ) { userSettings, backup, profilePicture ->
+    ) { userSettings, appPreferences, backup, profilePicture ->
         val profilePictureFile = userSettings.profilePicturePath?.let { path ->
             fileRepository.getProfilePictureFile(path)
                 .takeIf { withContext(Dispatchers.IO) { it.exists() } }
@@ -59,7 +62,8 @@ class SettingsOverviewViewModel(
             isWorkingOnProfilePicture = profilePicture.isWorking,
             profilePictureMessage = profilePicture.message,
             isWorkingOnBackup = backup.isWorking,
-            backupMessage = backup.message
+            backupMessage = backup.message,
+            exportFolderUri = appPreferences.exportFolderUri
         )
     }
         .stateIn(
@@ -90,11 +94,23 @@ class SettingsOverviewViewModel(
             SettingsOverviewEvent.OnProfilePictureMessageDismissed ->
                 updateProfilePictureState(message = null)
 
+            is SettingsOverviewEvent.OnExportFolderPicked ->
+                updateExportFolder(event.uri.toString())
+
+            SettingsOverviewEvent.OnExportFolderReset -> updateExportFolder(null)
+
             is SettingsOverviewEvent.OnBackupExported -> exportBackup(event.uri)
 
             is SettingsOverviewEvent.OnBackupRestored -> restoreBackup(event.uri)
 
             SettingsOverviewEvent.OnBackupMessageDismissed -> updateBackupState(message = null)
+        }
+    }
+
+    /** Persists (or forgets) the folder where the exported documents are saved. */
+    private fun updateExportFolder(uri: String?) {
+        viewModelScope.launch {
+            appPreferencesRepository.updateExportFolderUri(uri)
         }
     }
 

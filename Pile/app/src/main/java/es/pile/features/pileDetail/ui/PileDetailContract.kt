@@ -6,6 +6,8 @@ import es.pile.PileModel
 import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentExportFormat
 import es.pile.core.domain.models.DocumentSortOrder
+import es.pile.core.domain.models.ImageCompressionChoice
+import es.pile.core.domain.models.PendingImageImport
 import es.pile.core.ui.util.UiText
 import java.io.File
 
@@ -17,6 +19,8 @@ data class PileDetailState(
     val sortOrder: DocumentSortOrder = DocumentSortOrder.NEWEST,
     val temporaryDocument: DocumentModel? = null,
     val cameraUri: Uri? = null,
+    /** Images picked by the user, waiting for the compression prompt to be answered. */
+    val pendingImageImport: PendingImageImport? = null,
     val isLoading: Boolean = true,
     val showDraftWarning: Boolean = false,
     val isLoadingNewDocument: Boolean = false,
@@ -46,6 +50,12 @@ sealed interface PileDetailEvent {
 
     data class OnPdfImported(val uri: Uri) : PileDetailEvent
     data class OnImagesImported(val uris: List<Uri>) : PileDetailEvent
+
+    /** The user answered the compression prompt: the import continues with the choice. */
+    data class OnImageCompressionConfirmed(val choice: ImageCompressionChoice) : PileDetailEvent
+
+    /** The compression prompt was cancelled: nothing is imported. */
+    data object OnImageCompressionDismissed : PileDetailEvent
     data object OnCameraClick : PileDetailEvent
     data object OnCameraUriConsumed : PileDetailEvent
 
