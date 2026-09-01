@@ -87,6 +87,12 @@ import org.koin.androidx.compose.koinViewModel
 /** MIME type used when the user picks where the local backup file is written. */
 private const val BACKUP_MIME_TYPE = "application/zip"
 
+/**
+ * Name proposed (and used by default) for every exported backup file, so every
+ * backup is always saved as "doxora document backup.zip".
+ */
+private const val BACKUP_FILE_NAME = "doxora document backup.zip"
+
 @Composable
 fun SettingsOverviewScreen(
     viewModel: SettingsOverviewViewModel = koinViewModel(),
@@ -159,7 +165,7 @@ fun SettingsOverviewScreen(
             exportFolderLauncher.launch(state.exportFolderUri?.let(Uri::parse))
         },
         onExportBackup = {
-            exportBackupLauncher.launch("pile-backup-${System.currentTimeMillis()}.zip")
+            exportBackupLauncher.launch(BACKUP_FILE_NAME)
         },
         onImportBackup = {
             importBackupLauncher.launch(

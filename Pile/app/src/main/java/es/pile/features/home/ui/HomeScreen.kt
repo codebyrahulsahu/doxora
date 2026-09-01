@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
@@ -632,6 +633,11 @@ fun FabMenuWithController(
             rememberVectorPainter(Icons.Filled.Photo),
             stringResource(R.string.import_from_gallery),
             importActions.launchGallery
+        ),
+        FabMenuAction(
+            rememberVectorPainter(Icons.Filled.FolderOpen),
+            stringResource(R.string.import_from_device),
+            importActions.launchDeviceFiles
         ),
         FabMenuAction(
             rememberVectorPainter(Icons.Filled.CameraAlt),

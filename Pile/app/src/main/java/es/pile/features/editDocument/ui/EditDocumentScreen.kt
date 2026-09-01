@@ -89,6 +89,7 @@ import es.pile.core.domain.models.ImageCropData
 import es.pile.core.domain.models.ImageFilterType
 import es.pile.core.domain.models.ImageItem
 import es.pile.core.ui.composables.CompressImagesDialog
+import es.pile.core.ui.composables.ImportImageSourceDialog
 import es.pile.core.ui.composables.LoadingAlert
 import es.pile.core.ui.composables.LoadingWrapper
 import es.pile.core.ui.controllers.rememberDocumentImportController
@@ -187,10 +188,13 @@ fun EditDocumentContent(
     bitmapCache: Map<String, Bitmap>,
     onEvent: (EditDocumentEvent) -> Unit
 ) {
-    // Only intended for selecting images on the gallery.
+    // Only intended for adding new pages from the gallery or the device folders.
     val importActions = rememberDocumentImportController(
         onImagesSelected = { onEvent(EditDocumentEvent.OnImportImages(it)) }
     )
+
+    // Where the new pages come from: gallery or device folders.
+    var showImageSourcePicker by rememberSaveable { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -323,7 +327,7 @@ fun EditDocumentContent(
                         onMoveImage = { from, to ->
                             onEvent(EditDocumentEvent.OnMoveImage(from, to))
                         },
-                        onNewImage = importActions.launchGallery
+                        onNewImage = { showImageSourcePicker = true }
                     )
                 }
 
@@ -355,6 +359,21 @@ fun EditDocumentContent(
 
     if (state.isLoadingNewImage) {
         LoadingAlert(stringResource(R.string.adding_images))
+    }
+
+    // New pages can be picked from the gallery or from the device folders.
+    if (showImageSourcePicker) {
+        ImportImageSourceDialog(
+            onDismiss = { showImageSourcePicker = false },
+            onGallery = {
+                showImageSourcePicker = false
+                importActions.launchGallery()
+            },
+            onDeviceFiles = {
+                showImageSourcePicker = false
+                importActions.launchDeviceFiles()
+            }
+        )
     }
 
     // Ask whether the picked images should be compressed before adding the pages.

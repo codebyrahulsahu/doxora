@@ -1,5 +1,6 @@
 package es.pile.features.pileDetail.ui
 
+import android.graphics.Bitmap
 import android.net.Uri
 import app.cash.turbine.test
 import es.pile.DocumentModel
@@ -25,6 +26,7 @@ import es.pile.features.pileDetail.domain.usecases.DeletePileUseCase
 import es.pile.features.pileDetail.domain.usecases.UpdatePileUseCase
 import io.mockk.any
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -169,5 +171,142 @@ class PileDetailViewModelTest {
             assertEquals(null, viewModel.state.value.pendingImageImport)
             assertEquals(mockDoc, awaitItem())
         }
+    }
+
+    @Test
+    fun `OnHubPicturePicked should open the cropper and store the cropped picture`() = runTest {
+        // Given
+        val mockUri = mockk<Uri>()
+        val pickedBitmap = mockk<Bitmap>()
+        val croppedBitmap = mockk<Bitmap>()
+
+        coEvery { fileRepository.loadPictureForCropping(mockUri) } returns pickedBitmap
+        coEvery { fileRepository.saveProfilePicture(croppedBitmap, null) } returns "profile_1.jpg"
+
+        val viewModel = PileDetailViewModel(
+            pileId,
+            requestCoverThumbnailUseCase,
+            createDocumentUseCase,
+            updatePileUseCase,
+            deletePileUseCase,
+            getDocumentSizesUseCase,
+            pileModelRepository,
+            documentModelRepository,
+            bitmapCacheRepository,
+            fileRepository,
+            favoritesRepository,
+            documentLockRepository,
+            settingsRepository,
+            moveDocumentToTrashUseCase,
+            getPdfUriUseCase,
+            exportDocumentUseCase,
+            exportDocumentImagesUseCase,
+            documentOpener
+        )
+
+        // When: the picture is picked, it is not stored yet but sent to the cropper
+        viewModel.handleEvent(PileDetailEvent.OnHubPicturePicked(mockUri))
+
+        // Then
+        assertEquals(pickedBitmap, viewModel.state.value.hubPictureToCrop)
+        coVerify(exactly = 0) { fileRepository.saveProfilePicture(any<Bitmap>(), any()) }
+
+        // When: the crop is confirmed, the cropped picture becomes the hub picture
+        viewModel.handleEvent(PileDetailEvent.OnHubPictureCropConfirmed(croppedBitmap))
+
+        // Then
+        assertEquals(null, viewModel.state.value.hubPictureToCrop)
+        coVerify { fileRepository.saveProfilePicture(croppedBitmap, null) }
+        coVerify { settingsRepository.updateHubPicturePath(pileId, "profile_1.jpg") }
+    }
+
+    @Test
+    fun `OnHubPictureCropDismissed should discard the picked picture`() = runTest {
+        // Given
+        val mockUri = mockk<Uri>()
+        val pickedBitmap = mockk<Bitmap>()
+
+        coEvery { fileRepository.loadPictureForCropping(mockUri) } returns pickedBitmap
+
+        val viewModel = PileDetailViewModel(
+            pileId,
+            requestCoverThumbnailUseCase,
+            createDocumentUseCase,
+            updatePileUseCase,
+            deletePileUseCase,
+            getDocumentSizesUseCase,
+            pileModelRepository,
+            documentModelRepository,
+            bitmapCacheRepository,
+            fileRepository,
+            favoritesRepository,
+            documentLockRepository,
+            settingsRepository,
+            moveDocumentToTrashUseCase,
+            getPdfUriUseCase,
+            exportDocumentUseCase,
+            exportDocumentImagesUseCase,
+            documentOpener
+        )
+
+        viewModel.handleEvent(PileDetailEvent.OnHubPicturePicked(mockUri))
+        assertEquals(pickedBitmap, viewModel.state.value.hubPictureToCrop)
+
+        // When
+        viewModel.handleEvent(PileDetailEvent.OnHubPictureCropDismissed)
+
+        // Then
+        assertEquals(null, viewModel.state.value.hubPictureToCrop)
+        coVerify(exactly = 0) { fileRepository.saveProfilePicture(any<Bitmap>(), any()) }
+    }
+
+    @Test
+    fun `answering the resizer prompt is remembered in the settings`() = runTest {
+        // Given
+        val mockUris = listOf(mockk<Uri>())
+        val mockDoc = mockk<DocumentModel> {
+            every { id } returns "new-doc-id"
+        }
+        val choice = ImageCompressionChoice(compress = true, targetSizeKb = 1024)
+
+        coEvery {
+            createDocumentUseCase.createFromImages(
+                mockUris,
+                initialPileIds = listOf(pileId),
+                compression = choice
+            )
+        } returns mockDoc
+
+        val viewModel = PileDetailViewModel(
+            pileId,
+            requestCoverThumbnailUseCase,
+            createDocumentUseCase,
+            updatePileUseCase,
+            deletePileUseCase,
+            getDocumentSizesUseCase,
+            pileModelRepository,
+            documentModelRepository,
+            bitmapCacheRepository,
+            fileRepository,
+            favoritesRepository,
+            documentLockRepository,
+            settingsRepository,
+            moveDocumentToTrashUseCase,
+            getPdfUriUseCase,
+            exportDocumentUseCase,
+            exportDocumentImagesUseCase,
+            documentOpener
+        )
+
+        // When
+        viewModel.navigationEvent.test {
+            viewModel.handleEvent(PileDetailEvent.OnImagesImported(mockUris))
+            viewModel.handleEvent(PileDetailEvent.OnImageCompressionConfirmed(choice))
+            assertEquals(mockDoc, awaitItem())
+        }
+
+        // Then: the ON/OFF switch and the size become the new defaults
+        coVerify { settingsRepository.updateDocumentResizerEnabled(true) }
+        coVerify { settingsRepository.updateDocumentResizerTargetSizeKb(1024) }
     }
 }

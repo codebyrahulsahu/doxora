@@ -4,6 +4,37 @@
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
+    <!--
+      Package visibility for the camera apps: "Take a photo" opens the built in
+      "Document" mode of the native camera when the device exposes one.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+        <intent>
+            <action android:name="com.samsung.android.camera.action.DOCUMENT_SCAN" />
+        </intent>
+        <intent>
+            <action android:name="com.sec.android.app.camera.action.DOCUMENT_SCAN" />
+        </intent>
+        <intent>
+            <action android:name="miui.intent.action.SCAN_DOCUMENT" />
+        </intent>
+        <intent>
+            <action android:name="com.oplus.camera.action.DOCUMENT_SCAN" />
+        </intent>
+        <intent>
+            <action android:name="com.oneplus.camera.action.DOCUMENT_SCAN" />
+        </intent>
+        <intent>
+            <action android:name="com.huawei.camera.action.DOCUMENT_SCAN" />
+        </intent>
+        <intent>
+            <action android:name="com.motorola.camera.action.DOCUMENT_SCAN" />
+        </intent>
+    </queries>
+
     <application
         android:name="es.pile.App"
         android:allowBackup="true"
