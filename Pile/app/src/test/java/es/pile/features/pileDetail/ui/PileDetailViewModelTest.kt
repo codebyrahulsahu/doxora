@@ -13,6 +13,7 @@ import es.pile.core.domain.repositories.PileModelRepository
 import es.pile.core.domain.repositories.SettingsRepository
 import es.pile.core.domain.useCases.GetDocumentSizesUseCase
 import es.pile.core.domain.useCases.RequestCoverThumbnailUseCase
+import es.pile.core.domain.models.ImageCompressionChoice
 import es.pile.core.domain.models.UserSettings
 import es.pile.features.documentDetail.domain.helper.DocumentOpener
 import es.pile.features.documentDetail.domain.useCases.MoveDocumentToTrashUseCase
@@ -121,13 +122,20 @@ class PileDetailViewModelTest {
     }
 
     @Test
-    fun `OnImagesImported should call createFromImages with pileId and navigate`() = runTest {
+    fun `OnImagesImported should ask for compression and import on confirmation`() = runTest {
         // Given
         val mockUris = listOf(mockk<Uri>())
         val mockDoc = mockk<DocumentModel> {
             every { id } returns "new-doc-id"
         }
-        coEvery { createDocumentUseCase.createFromImages(mockUris, initialPileIds = listOf(pileId)) } returns mockDoc
+        val compressionChoice = ImageCompressionChoice.original()
+        coEvery {
+            createDocumentUseCase.createFromImages(
+                mockUris,
+                initialPileIds = listOf(pileId),
+                compression = compressionChoice
+            )
+        } returns mockDoc
 
         val viewModel = PileDetailViewModel(
             pileId,
@@ -152,7 +160,13 @@ class PileDetailViewModelTest {
 
         // When & Then
         viewModel.navigationEvent.test {
+            // The images are not imported right away: the compression prompt is shown first.
             viewModel.handleEvent(PileDetailEvent.OnImagesImported(mockUris))
+            assertEquals(mockUris, viewModel.state.value.pendingImageImport?.uris)
+
+            // Answering the prompt performs the actual import.
+            viewModel.handleEvent(PileDetailEvent.OnImageCompressionConfirmed(compressionChoice))
+            assertEquals(null, viewModel.state.value.pendingImageImport)
             assertEquals(mockDoc, awaitItem())
         }
     }

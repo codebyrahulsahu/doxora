@@ -3,6 +3,7 @@ package es.pile.features.editDocument.domain.useCases
 import android.net.Uri
 import es.pile.DocumentImage
 import es.pile.DocumentModel
+import es.pile.core.domain.models.ImageCompressionChoice
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.useCases.SaveImagesUseCase
 import kotlinx.coroutines.CoroutineDispatcher
@@ -30,6 +31,8 @@ class AddPageToDocumentUseCase(
      *
      * @param document The original [DocumentModel] to which the pages will be attached.
      * @param uris A list of [Uri] pointing to the source images to be imported.
+     * @param compression Explicit compression choice made by the user in the compression
+     * prompt, or null to fall back to the stored settings.
      * @return A [Pair] containing:
      *         - First: The updated [DocumentModel] with the new image IDs appended.
      *         - Second: A [List] of the newly created [DocumentImage] objects.
@@ -37,9 +40,15 @@ class AddPageToDocumentUseCase(
      */
     suspend operator fun invoke(
         document: DocumentModel,
-        uris: List<Uri>
+        uris: List<Uri>,
+        compression: ImageCompressionChoice? = null
     ): Pair<DocumentModel, List<DocumentImage>> = withContext(ioDispatcher) {
-        val imageFiles = saveImagesUseCase(FileRepository.StorageType.CACHE, uris, document.id)
+        val imageFiles = saveImagesUseCase(
+            storageType = FileRepository.StorageType.CACHE,
+            uris = uris,
+            documentId = document.id,
+            compression = compression
+        )
 
         val documentImages = imageFiles.map { file ->
             DocumentImage(

@@ -6,14 +6,17 @@ import androidx.lifecycle.viewModelScope
 import es.pile.DocumentImage
 import es.pile.DocumentModel
 import es.pile.R
+import es.pile.core.domain.models.ImageCompressionChoice
 import es.pile.core.domain.models.ImageCropData
 import es.pile.core.domain.models.ImageFilterType
 import es.pile.core.domain.models.ImageItem
+import es.pile.core.domain.models.PendingImageImport
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentImageRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
 import es.pile.core.domain.repositories.FileRepository
 import es.pile.core.domain.repositories.FileRepository.StorageType
+import es.pile.core.domain.repositories.SettingsRepository
 import es.pile.core.ui.util.UiText
 import es.pile.features.editDocument.domain.useCases.AddPageToDocumentUseCase
 import es.pile.features.editDocument.domain.useCases.FinalizeDocumentUpdateUseCase
@@ -45,7 +48,8 @@ class EditDocumentViewModel(
     private val documentModelRepository: DocumentModelRepository,
     private val bitmapCacheRepository: BitmapCacheRepository,
     private val documentImageRepository: DocumentImageRepository,
-    private val fileRepository: FileRepository
+    private val fileRepository: FileRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
     private var _state = MutableStateFlow(EditDocumentState())
     var state: StateFlow<EditDocumentState> = _state.asStateFlow()
@@ -128,7 +132,12 @@ class EditDocumentViewModel(
             is EditDocumentEvent.OnSelectImage -> selectImage(event.index)
             is EditDocumentEvent.OnMoveImage -> moveImage(event.fromIndex, event.toIndex)
 
-            is EditDocumentEvent.OnImportImages -> addImages(event.uris)
+            is EditDocumentEvent.OnImportImages -> requestImageImport(event.uris)
+
+            is EditDocumentEvent.OnImageCompressionConfirmed -> confirmImageImport(event.choice)
+
+            EditDocumentEvent.OnImageCompressionDismissed ->
+                _state.update { it.copy(pendingImageImport = null) }
             is EditDocumentEvent.OnModeChange -> updateUIMode(event.mode)
 
             is EditDocumentEvent.OnUpdateFilter -> updateFilter(event.index)
@@ -347,7 +356,38 @@ class EditDocumentViewModel(
         removeBitmapFromCacheUseCase.removeImageThumbnails(document, documentImage.id)
     }
 
-    private fun addImages(uriList: List<Uri>) {
+    /**
+     * First step of adding new pages: instead of adding them right away, the user
+     * is asked whether the images should be compressed (and to which size). The
+     * pre-selected answer follows the Document Resizer settings.
+     */
+    private fun requestImageImport(uriList: List<Uri>) {
+        viewModelScope.launch {
+            val settings = settingsRepository.userSettings.first()
+
+            _state.update {
+                it.copy(
+                    pendingImageImport = PendingImageImport(
+                        uris = uriList,
+                        defaultChoice = ImageCompressionChoice(
+                            compress = settings.isDocumentResizerEnabled,
+                            targetSizeKb = settings.documentResizerTargetSizeKb
+                        )
+                    )
+                )
+            }
+        }
+    }
+
+    /** Second step: the compression prompt was answered, the pages are added. */
+    private fun confirmImageImport(choice: ImageCompressionChoice) {
+        val pending = state.value.pendingImageImport ?: return
+        _state.update { it.copy(pendingImageImport = null) }
+
+        addImages(pending.uris, choice)
+    }
+
+    private fun addImages(uriList: List<Uri>, compression: ImageCompressionChoice? = null) {
         val currentState = state.value
         val document = currentState.draftDocument ?: return
 
@@ -356,7 +396,8 @@ class EditDocumentViewModel(
         _state.update { it.copy(isLoadingNewImage = true) }
 
         viewModelScope.launch {
-            val (updatedDocument, imageModels) = addPageToDocumentUseCase(document, uriList)
+            val (updatedDocument, imageModels) =
+                addPageToDocumentUseCase(document, uriList, compression)
 
             val updatedImages = currentState.imageItems.map { it.image } + imageModels
 

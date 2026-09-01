@@ -3,6 +3,7 @@ package es.pile.features.settings.ui.overview
 import android.content.Intent
 import android.net.Uri
 import android.content.pm.PackageManager
+import android.provider.DocumentsContract
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.S
 import android.os.Build.VERSION_CODES.TIRAMISU
@@ -27,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
@@ -120,6 +122,25 @@ fun SettingsOverviewScreen(
         uri?.let { viewModel.handleEvent(SettingsOverviewEvent.OnProfilePicturePicked(it)) }
     }
 
+    val settingsContext = LocalContext.current
+
+    // Folder where the exported documents are saved: the permission is persisted
+    // so every later export writes there without asking again.
+    val exportFolderLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { folderUri ->
+        if (folderUri == null) return@rememberLauncherForActivityResult
+
+        runCatching {
+            settingsContext.contentResolver.takePersistableUriPermission(
+                folderUri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+        }
+
+        viewModel.handleEvent(SettingsOverviewEvent.OnExportFolderPicked(folderUri))
+    }
+
     val launchProfilePicturePicker = {
         profilePictureLauncher.launch(
             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -134,6 +155,9 @@ fun SettingsOverviewScreen(
         navigateToRecycleBin = navigateToRecycleBin,
         onDocumentResizerClick = navigateToSettingsDocumentResizer,
         onChooseProfilePictureFromGallery = launchProfilePicturePicker,
+        onPickExportFolder = {
+            exportFolderLauncher.launch(state.exportFolderUri?.let(Uri::parse))
+        },
         onExportBackup = {
             exportBackupLauncher.launch("pile-backup-${System.currentTimeMillis()}.zip")
         },
@@ -225,6 +249,7 @@ fun SettingsOverviewContent(
     navigateToRecycleBin: () -> Unit = {},
     onDocumentResizerClick: () -> Unit = {},
     onChooseProfilePictureFromGallery: () -> Unit = {},
+    onPickExportFolder: () -> Unit = {},
     onExportBackup: () -> Unit = {},
     onImportBackup: () -> Unit = {},
     onOpenUrl: (String) -> Unit = {},
@@ -306,6 +331,12 @@ fun SettingsOverviewContent(
                 LibrarySection(
                     onFavoritesClick = navigateToFavorites,
                     onRecycleBinClick = navigateToRecycleBin
+                )
+
+                ExportFolderSection(
+                    exportFolderUri = state.exportFolderUri,
+                    onChangeFolder = onPickExportFolder,
+                    onResetFolder = { onEvent(SettingsOverviewEvent.OnExportFolderReset) }
                 )
 
                 LocalBackupSection(
@@ -621,6 +652,61 @@ private fun LibrarySection(
         )
     }
 }
+
+/**
+ * Folder where every exported document (PDF, JPG or PNG) is written.
+ *
+ * The folder can be changed at any time from here; when no folder has been
+ * chosen yet, it is asked the first time a document is exported.
+ */
+@Composable
+private fun ExportFolderSection(
+    modifier: Modifier = Modifier,
+    exportFolderUri: String?,
+    onChangeFolder: () -> Unit,
+    onResetFolder: () -> Unit
+) {
+    SettingsSection(modifier = modifier, title = stringResource(R.string.export_documents)) {
+        SettingsItem(
+            itemPosition = if (exportFolderUri != null) ItemPosition.TOP else ItemPosition.SINGLE,
+            title = stringResource(R.string.export_folder),
+            subtitle = exportFolderUri?.let(::formatExportFolder)
+                ?: stringResource(R.string.export_folder_not_set),
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Filled.Folder,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            onAction = onChangeFolder
+        )
+
+        if (exportFolderUri != null) {
+            SettingsItem(
+                itemPosition = ItemPosition.BOTTOM,
+                title = stringResource(R.string.export_folder_reset),
+                subtitle = stringResource(R.string.export_folder_reset_body),
+                onAction = onResetFolder
+            )
+        }
+    }
+}
+
+/**
+ * Turns a stored tree URI into a readable path, e.g.
+ * "content://…/tree/primary%3ADocuments%2FDoxora" -> "Internal storage/Documents/Doxora".
+ */
+private fun formatExportFolder(uriString: String): String = runCatching {
+    val documentId = DocumentsContract.getTreeDocumentId(Uri.parse(uriString))
+    val parts = documentId.split(":", limit = 2)
+    val volume =
+        if (parts.first().equals("primary", ignoreCase = true)) "Internal storage"
+        else parts.first()
+    val path = parts.getOrNull(1).orEmpty()
+
+    if (path.isBlank()) volume else "$volume/$path"
+}.getOrDefault(uriString)
 
 /**
  * Everything here stays on the device: the backup is a single file written exactly

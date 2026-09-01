@@ -8,6 +8,8 @@ import es.pile.R
 import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentExportFormat
 import es.pile.core.domain.models.DocumentViewMode
+import es.pile.core.domain.models.ImageCompressionChoice
+import es.pile.core.domain.models.PendingImageImport
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentLockRepository
 import es.pile.core.domain.repositories.FileRepository
@@ -33,6 +35,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -152,14 +155,12 @@ class HomeViewModel(
                 }
             }
 
-            is HomeEvent.OnImagesImported -> {
-                if (state.value.temporaryDocument != null) {
-                    pendingImportAction = { importImagesIntent(event.uris) }
-                    _state.update { it.copy(showDraftWarning = true) }
-                } else {
-                    importImagesIntent(event.uris)
-                }
-            }
+            is HomeEvent.OnImagesImported -> requestImageImport(event.uris)
+
+            is HomeEvent.OnImageCompressionConfirmed -> confirmImageImport(event.choice)
+
+            HomeEvent.OnImageCompressionDismissed ->
+                _state.update { it.copy(pendingImageImport = null) }
 
             HomeEvent.OnCameraClick -> {
                 if (state.value.temporaryDocument != null) {
@@ -409,11 +410,47 @@ class HomeViewModel(
         }
     }
 
-    private fun importImagesIntent(uriList: List<Uri>) {
+    /**
+     * First step of an image import: instead of importing right away, the user is
+     * asked whether the images should be compressed (and to which size). The
+     * pre-selected answer follows the Document Resizer settings.
+     */
+    private fun requestImageImport(uriList: List<Uri>) {
+        viewModelScope.launch {
+            val settings = settingsRepository.userSettings.first()
+
+            _state.update {
+                it.copy(
+                    pendingImageImport = PendingImageImport(
+                        uris = uriList,
+                        defaultChoice = ImageCompressionChoice(
+                            compress = settings.isDocumentResizerEnabled,
+                            targetSizeKb = settings.documentResizerTargetSizeKb
+                        )
+                    )
+                )
+            }
+        }
+    }
+
+    /** Second step: the compression prompt was answered, the import continues. */
+    private fun confirmImageImport(choice: ImageCompressionChoice) {
+        val pending = state.value.pendingImageImport ?: return
+        _state.update { it.copy(pendingImageImport = null) }
+
+        if (state.value.temporaryDocument != null) {
+            pendingImportAction = { importImagesIntent(pending.uris, choice) }
+            _state.update { it.copy(showDraftWarning = true) }
+        } else {
+            importImagesIntent(pending.uris, choice)
+        }
+    }
+
+    private fun importImagesIntent(uriList: List<Uri>, compression: ImageCompressionChoice? = null) {
         viewModelScope.launch {
             try {
                 _state.update { it.copy(isLoadingNewDocument = true) }
-                val newDoc = createDocumentUseCase.createFromImages(uriList)
+                val newDoc = createDocumentUseCase.createFromImages(uriList, compression = compression)
                 _navigationEvent.send(newDoc)
             } catch (e: Exception) {
                 Napier.e("Error importing images", e)

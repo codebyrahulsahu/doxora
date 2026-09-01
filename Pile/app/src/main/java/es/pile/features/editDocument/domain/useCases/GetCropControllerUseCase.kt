@@ -1,5 +1,6 @@
 package es.pile.features.editDocument.domain.useCases
 
+import androidx.compose.ui.graphics.Color
 import com.tanishranjan.cropkit.CropController
 import com.tanishranjan.cropkit.CropData
 import com.tanishranjan.cropkit.CropDefaults
@@ -46,7 +47,17 @@ class GetCropControllerUseCase(
 
         val cropController = cropControllerFactory.create(
             bitmap = resizedBitmap.bitmap,
-            cropColors = CropDefaults.cropColors(),
+            // The library defaults draw a white crop frame and white handles,
+            // which are invisible over white document scans. A saturated accent
+            // color and a stronger dimmed overlay keep the crop tool clearly
+            // visible on both light and dark backgrounds.
+            cropColors = CropDefaults.cropColors(
+                overlay = Color.Black.copy(alpha = 0.6f),
+                overlayActive = Color.Black.copy(alpha = 0.35f),
+                gridlines = CROP_ACCENT_COLOR.copy(alpha = 0.8f),
+                cropRectangle = CROP_ACCENT_COLOR,
+                handle = CROP_ACCENT_COLOR
+            ),
             cropOptions = CropDefaults.cropOptions(
                 initialCropData = resizedCropData ?: CropData.Zero,
                 cropShape = CropShape.FreeForm
@@ -81,3 +92,11 @@ class GetCropControllerUseCase(
         )
     }
 }
+
+/**
+ * Accent color used by the crop tool (frame, handles and gridlines).
+ *
+ * A vivid blue keeps a strong contrast against white document pages as well as
+ * dark photos, unlike the white library defaults.
+ */
+private val CROP_ACCENT_COLOR = Color(0xFF2979FF)

@@ -69,6 +69,7 @@ import es.pile.R
 import es.pile.core.domain.models.DocumentCoverItem
 import es.pile.core.domain.models.DocumentSortOrder
 import es.pile.core.ui.composables.AlertDraftDocumentWarning
+import es.pile.core.ui.composables.CompressImagesDialog
 import es.pile.core.ui.composables.AlertEditPile
 import es.pile.core.ui.composables.DocumentSelectionTopBar
 import es.pile.core.ui.composables.DocumentSortMenu
@@ -512,6 +513,18 @@ fun PileDetailContent(
                         if (tempDocument.isIncomingPdf) navigateToAddDocument(tempDocument.id)
                         else navigateToEditDocument(tempDocument.id)
                     }
+                }
+            )
+        }
+
+        // Ask whether the picked images should be compressed before importing them.
+        state.pendingImageImport?.let { pending ->
+            CompressImagesDialog(
+                imageCount = pending.uris.size,
+                defaultChoice = pending.defaultChoice,
+                onDismiss = { onEvent(PileDetailEvent.OnImageCompressionDismissed) },
+                onConfirm = { choice ->
+                    onEvent(PileDetailEvent.OnImageCompressionConfirmed(choice))
                 }
             )
         }

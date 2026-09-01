@@ -21,7 +21,13 @@ data class SettingsOverviewState(
     val isWorkingOnProfilePicture: Boolean = false,
     val profilePictureMessage: UiText? = null,
     val isWorkingOnBackup: Boolean = false,
-    val backupMessage: UiText? = null
+    val backupMessage: UiText? = null,
+    /**
+     * Tree URI (as a string) of the folder where exported documents are saved,
+     * or null when no folder has been chosen yet (it is then asked on the
+     * first export).
+     */
+    val exportFolderUri: String? = null
 )
 
 sealed interface SettingsOverviewEvent {
@@ -38,6 +44,13 @@ sealed interface SettingsOverviewEvent {
     data class OnProfilePicturePicked(val uri: Uri) : SettingsOverviewEvent
     data object OnProfilePictureRemoved : SettingsOverviewEvent
     data object OnProfilePictureMessageDismissed : SettingsOverviewEvent
+
+    // Export folder
+    /** The user picked a new folder where the exported documents are saved. */
+    data class OnExportFolderPicked(val uri: Uri) : SettingsOverviewEvent
+
+    /** Forget the saved export folder: it will be asked again on the next export. */
+    data object OnExportFolderReset : SettingsOverviewEvent
 
     // Local backup & restore
     data class OnBackupExported(val uri: Uri) : SettingsOverviewEvent

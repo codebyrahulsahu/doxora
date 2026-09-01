@@ -313,6 +313,21 @@ Email: %3$s</string>
     <string name="kb">KB</string>
     <string name="mb">MB</string>
 
+    <string name="compress_images_title">Compress images?</string>
+    <string name="compress_images_body">You are about to import %1$d image(s). You can compress them to save storage, or keep them at their original size.</string>
+    <string name="keep_original_size">Keep original size</string>
+    <string name="keep_original_size_body">Best quality, larger files.</string>
+    <string name="compress_images_option">Compress images</string>
+    <string name="compress_images_option_body">Pick the maximum size per image.</string>
+    <string name="compression_custom">Custom</string>
+    <string name="import_images_action">Import</string>
+
+    <string name="export_documents">Export</string>
+    <string name="export_folder">Export folder</string>
+    <string name="export_folder_not_set">Not set — you\'ll be asked where to save the first time you export. Tap to choose it now.</string>
+    <string name="export_folder_reset">Reset export folder</string>
+    <string name="export_folder_reset_body">Forget the saved folder. You\'ll be asked again on the next export.</string>
+
     <string name="onboarding_welcome_title">Welcome to Doxora</string>
     <string name="onboarding_welcome_description">Centralized document management, designed to make your personal files easier to organize.</string>
     <string name="onboarding_piles_title">Organize with Hubs</string>

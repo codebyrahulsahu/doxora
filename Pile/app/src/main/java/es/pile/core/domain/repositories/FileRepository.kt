@@ -111,16 +111,16 @@ interface FileRepository {
      * @param storageType The type of storage (PERSISTENT or CACHE).
      * @param uris List of URIs of images to be saved.
      * @param documentId Unique identifier of the document where the images will be stored.
-     * @param maxSize Maximum size of the images in pixels (default: 1200).
-     * @param quality Quality of the saved images (default: 85).
+     * @param maxSize Maximum size of the images in pixels (default: 2048).
+     * @param quality Quality of the saved images (default: 92).
      * @return List of File objects representing the saved images.
      */
     suspend fun saveResizeRotateImagesToStorage(
         storageType: StorageType,
         uris: List<Uri>,
         documentId: String,
-        maxSize: Int = 1200,
-        quality: Int = 85
+        maxSize: Int = 2048,
+        quality: Int = 92
     ): List<File>
 
     /**
