@@ -72,5 +72,9 @@ sealed interface Pane : Parcelable, NavKey {
 
     @Parcelize
     @Serializable
+    data object SettingsDocumentResizer : Pane
+
+    @Parcelize
+    @Serializable
     data object SettingsLanguageModel : Pane
 }

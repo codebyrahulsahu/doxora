@@ -62,6 +62,24 @@ interface SettingsRepository {
     suspend fun updateImageResolution(resolution: ImageResolution)
 
     /**
+     * Enables or disables the Document Resizer.
+     *
+     * When enabled, new document images are compressed to the configured
+     * [updateDocumentResizerTargetSizeKb] target size keeping the best
+     * possible quality.
+     *
+     * @param enable Whether the Document Resizer should be enabled.
+     */
+    suspend fun updateDocumentResizerEnabled(enable: Boolean)
+
+    /**
+     * Updates the target file size used by the Document Resizer.
+     *
+     * @param sizeKb The new target size in kilobytes.
+     */
+    suspend fun updateDocumentResizerTargetSizeKb(sizeKb: Int)
+
+    /**
      * Updates the user profile display name.
      *
      * @param name The new profile name.

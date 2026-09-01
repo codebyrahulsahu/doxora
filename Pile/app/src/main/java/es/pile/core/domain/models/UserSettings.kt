@@ -9,6 +9,14 @@ data class UserSettings(
     val isLocalAiEnabled: Boolean = false,
     val selectedModel: String? = null,
     val imageResolution: ImageResolution = ImageResolution.ORIGINAL,
+    /**
+     * Whether new document images are compressed to a custom target file size
+     * by the Document Resizer (keeps the best possible quality while fitting
+     * the configured [documentResizerTargetSizeKb]).
+     */
+    val isDocumentResizerEnabled: Boolean = false,
+    /** Custom target file size used by the Document Resizer, in kilobytes. */
+    val documentResizerTargetSizeKb: Int = 512,
     val profileName: String? = null,
     val profileEmail: String? = null,
     /** File name (inside the app's internal storage) of the profile picture, if any. */

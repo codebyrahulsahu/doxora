@@ -138,6 +138,26 @@ interface FileRepository {
     ): List<File>
 
     /**
+     * Saves a list of [Uri] objects as JPEG images compressed to a custom target file size.
+     *
+     * The Document Resizer keeps the original dimensions and the highest possible
+     * quality while making sure every saved image fits the requested size. Images
+     * that already fit the target are stored unchanged (full quality).
+     *
+     * @param storageType The type of storage (PERSISTENT or CACHE).
+     * @param uris List of URIs of images to be saved.
+     * @param documentId Unique identifier of the document where the images will be stored.
+     * @param targetSizeKb Maximum file size in kilobytes for each saved image.
+     * @return List of File objects representing the saved images.
+     */
+    suspend fun saveImagesToTargetSize(
+        storageType: StorageType,
+        uris: List<Uri>,
+        documentId: String,
+        targetSizeKb: Int
+    ): List<File>
+
+    /**
      * Copies an image to the internal storage of the app.
      *
      * @param documentId The unique identifier of the document where the image will be stored.
