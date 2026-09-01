@@ -39,6 +39,8 @@ data class PileDetailState(
     val isPreparingHubPicture: Boolean = false,
     /** True while the cropped picture is being stored. */
     val isWorkingOnHubPicture: Boolean = false,
+    /** Last Document Resizer target size, used to pre-fill the resize prompt. */
+    val documentResizerTargetSizeKb: Int = 512,
     val errorMessage: UiText? = null
 ) {
     /** True while one or more documents are selected inside the hub. */
