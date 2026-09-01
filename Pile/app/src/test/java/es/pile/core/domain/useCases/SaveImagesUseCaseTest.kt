@@ -59,4 +59,58 @@ class SaveImagesUseCaseTest {
         // Then
         assertEquals(mockFiles, result)
     }
+
+    @Test
+    fun `invoke should compress images to the custom target size when the resizer is enabled`() = runTest {
+        // Given
+        val storageType = FileRepository.StorageType.PERSISTENT
+        val uris = listOf(mockk<Uri>())
+        val docId = "doc3"
+        val targetSizeKb = 1024
+        val mockFiles = listOf(File("img3.jpg"))
+
+        every { settingsRepository.userSettings } returns flowOf(
+            UserSettings(
+                imageResolution = ImageResolution.ORIGINAL,
+                isDocumentResizerEnabled = true,
+                documentResizerTargetSizeKb = targetSizeKb
+            )
+        )
+        coEvery {
+            fileRepository.saveImagesToTargetSize(storageType, uris, docId, targetSizeKb)
+        } returns mockFiles
+
+        // When
+        val result = saveImagesUseCase(storageType, uris, docId)
+
+        // Then
+        assertEquals(mockFiles, result)
+    }
+
+    @Test
+    fun `invoke should use the resizer target size even when resolution is LOW`() = runTest {
+        // Given
+        val storageType = FileRepository.StorageType.CACHE
+        val uris = listOf(mockk<Uri>())
+        val docId = "doc4"
+        val targetSizeKb = 256
+        val mockFiles = listOf(File("img4.jpg"))
+
+        every { settingsRepository.userSettings } returns flowOf(
+            UserSettings(
+                imageResolution = ImageResolution.LOW,
+                isDocumentResizerEnabled = true,
+                documentResizerTargetSizeKb = targetSizeKb
+            )
+        )
+        coEvery {
+            fileRepository.saveImagesToTargetSize(storageType, uris, docId, targetSizeKb)
+        } returns mockFiles
+
+        // When
+        val result = saveImagesUseCase(storageType, uris, docId)
+
+        // Then
+        assertEquals(mockFiles, result)
+    }
 }

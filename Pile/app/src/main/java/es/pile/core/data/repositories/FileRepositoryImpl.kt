@@ -27,6 +27,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -165,6 +166,24 @@ class FileRepositoryImpl(
                 destFile
             }
         }.awaitAll()
+    }
+
+    override suspend fun saveImagesToTargetSize(
+        storageType: StorageType,
+        uris: List<Uri>,
+        documentId: String,
+        targetSizeKb: Int
+    ): List<File> = withContext(ioDispatcher) {
+        val storageDir = File(getStorage(storageType), documentId).apply { if (!exists()) mkdirs() }
+
+        // Never try to compress below a sane minimum to avoid useless degradation.
+        val targetBytes = (targetSizeKb.toLong() * 1024L).coerceAtLeast(MIN_COMPRESSED_IMAGE_BYTES)
+
+        uris.map { uri ->
+            async {
+                saveImageToTargetSize(uri, storageDir, targetBytes)
+            }
+        }.awaitAll().filterNotNull()
     }
 
     override suspend fun copyImageToInternalStorage(
@@ -528,6 +547,166 @@ class FileRepositoryImpl(
 
 
     /**
+     * Helper function to save an image from a URI compressed to a custom target file size.
+     *
+     * Keeps the original dimensions and the highest possible quality: the JPEG quality
+     * is reduced only as much as needed to fit [targetBytes], and images that already
+     * fit the target are stored unchanged. Very heavy images are progressively
+     * downscaled as a last resort.
+     *
+     * @param uri URI of the image to be saved.
+     * @param storageDir Directory where the image will be saved.
+     * @param targetBytes Maximum size in bytes of the saved image.
+     * @return File object representing the saved image, or null if it could not be processed.
+     */
+    private suspend fun saveImageToTargetSize(
+        uri: Uri,
+        storageDir: File,
+        targetBytes: Long
+    ): File? = withContext(ioDispatcher) {
+        try {
+            val fileName = getImageFileName(UUID.randomUUID().toString())
+            val destFile = File(storageDir, fileName)
+
+            // Already fits the target: keep the original bytes untouched.
+            val originalSize = getContentUriSize(uri)
+            if (originalSize != null && originalSize <= targetBytes) {
+                copyContentUriToFile(uri, destFile)
+                return@withContext destFile
+            }
+
+            val rotation = getExifRotation(uri)
+
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, options)
+            }
+
+            options.inJustDecodeBounds = false
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888
+
+            val bitmap = contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, options)
+            } ?: return@withContext null
+
+            var finalBitmap = if (rotation != 0) rotateBitmap(bitmap, rotation) else bitmap
+
+            val compressed = compressBitmapToTargetSize(finalBitmap, targetBytes)
+
+            FileOutputStream(destFile).use { out ->
+                out.write(compressed)
+            }
+
+            if (finalBitmap != bitmap) finalBitmap.recycle()
+            bitmap.recycle()
+
+            destFile
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Compresses a [Bitmap] to a JPEG [ByteArray] that fits [targetBytes].
+     *
+     * A binary search over the JPEG quality (1-100) finds the highest quality whose
+     * encoded size is still below the target, so quality is preserved as much as
+     * possible. If even the lowest quality is too big, the bitmap is progressively
+     * downscaled (keeping the aspect ratio) until it fits.
+     *
+     * @param source The bitmap to compress (not recycled by this function).
+     * @param targetBytes Maximum size in bytes of the result.
+     * @return The compressed JPEG bytes.
+     */
+    private fun compressBitmapToTargetSize(source: Bitmap, targetBytes: Long): ByteArray {
+        var working = source
+        var result = compressToBytes(working, findMaxQuality(working, targetBytes))
+
+        var scaleFactor = 0.85f
+        var attempts = 0
+        while (result.size.toLong() > targetBytes && attempts < MAX_DOWNSCALE_ATTEMPTS) {
+            val newWidth = (working.width * scaleFactor).toInt().coerceAtLeast(MIN_IMAGE_SIDE_PIXELS)
+            val newHeight = (working.height * scaleFactor).toInt().coerceAtLeast(MIN_IMAGE_SIDE_PIXELS)
+
+            if (newWidth >= working.width || newHeight >= working.height) break
+
+            val scaled = Bitmap.createScaledBitmap(working, newWidth, newHeight, true)
+            if (scaled != working) working.recycle()
+            working = scaled
+
+            result = compressToBytes(working, findMaxQuality(working, targetBytes))
+            attempts++
+        }
+
+        if (working != source) working.recycle()
+        return result
+    }
+
+    /**
+     * Finds the highest JPEG quality (1-100) whose encoded size fits [targetBytes].
+     *
+     * @param bitmap The bitmap to encode.
+     * @param targetBytes Maximum size in bytes.
+     * @return The best quality value (at least 1).
+     */
+    private fun findMaxQuality(bitmap: Bitmap, targetBytes: Long): Int {
+        var low = MIN_JPEG_QUALITY
+        var high = MAX_JPEG_QUALITY
+        var best = MIN_JPEG_QUALITY
+
+        while (low <= high) {
+            val mid = (low + high) / 2
+            val size = compressToBytes(bitmap, mid).size.toLong()
+
+            if (size <= targetBytes) {
+                best = mid
+                low = mid + 1
+            } else {
+                high = mid - 1
+            }
+        }
+        return best
+    }
+
+    /**
+     * Encodes a [Bitmap] as a JPEG [ByteArray] with the given quality.
+     */
+    private fun compressToBytes(bitmap: Bitmap, quality: Int): ByteArray {
+        val output = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, output)
+        return output.toByteArray()
+    }
+
+    /**
+     * Returns the size in bytes of the file behind a [Uri], or null when unknown.
+     *
+     * Providers that do not support queries (for example the FileProvider used for
+     * scanner/camera captures) simply report an unknown size.
+     */
+    private fun getContentUriSize(uri: Uri): Long? {
+        return try {
+            contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                    if (sizeIndex != -1 && !cursor.isNull(sizeIndex)) {
+                        cursor.getLong(sizeIndex)
+                    } else {
+                        null
+                    }
+                } else {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+
+    /**
      * Scales a [Bitmap] to a specified maximum size.
      *
      * @param source The [Bitmap] to be scaled.
@@ -616,5 +795,20 @@ class FileRepositoryImpl(
 
         /** JPEG quality of a stored profile picture. */
         const val PROFILE_PICTURE_QUALITY = 90
+
+        /** Smallest target size (in bytes) accepted by the Document Resizer. */
+        const val MIN_COMPRESSED_IMAGE_BYTES = 16L * 1024L
+
+        /** Lowest JPEG quality used by the Document Resizer. */
+        const val MIN_JPEG_QUALITY = 1
+
+        /** Highest JPEG quality used by the Document Resizer. */
+        const val MAX_JPEG_QUALITY = 100
+
+        /** How many times the Document Resizer may downscale a very heavy image. */
+        const val MAX_DOWNSCALE_ATTEMPTS = 12
+
+        /** Smallest image side (in pixels) kept while downscaling a very heavy image. */
+        const val MIN_IMAGE_SIDE_PIXELS = 64
     }
 }

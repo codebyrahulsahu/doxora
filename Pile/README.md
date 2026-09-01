@@ -27,6 +27,7 @@ The project is built with **Kotlin** and **Jetpack Compose**, following a **Clea
 - Per document PIN lock
 - Recycle Bin with 30 days automatic deletion
 - Export documents as PDF or JPG/PNG images
+- Document Resizer: compress new documents to a custom size (KB/MB) keeping the best possible quality
 
 
 ## Tech Stack

@@ -55,6 +55,18 @@ class DataStoreSettingsRepository(
         }
     }
 
+    override suspend fun updateDocumentResizerEnabled(enable: Boolean) {
+        withContext(ioDispatcher) {
+            dataStore.updateData { it.copy(isDocumentResizerEnabled = enable) }
+        }
+    }
+
+    override suspend fun updateDocumentResizerTargetSizeKb(sizeKb: Int) {
+        withContext(ioDispatcher) {
+            dataStore.updateData { it.copy(documentResizerTargetSizeKb = sizeKb) }
+        }
+    }
+
     override suspend fun updateProfileName(name: String) {
         withContext(ioDispatcher) {
             dataStore.updateData { it.copy(profileName = name) }

@@ -13,7 +13,8 @@ import java.io.File
 /**
  * Use case responsible for saving images to the internal storage of the app.
  *
- * It checks the user's preferred image resolution setting and saves the images accordingly.
+ * It checks the user's preferred image resolution setting and the Document Resizer
+ * toggle, and saves the images accordingly.
  */
 class SaveImagesUseCase(
     private val ioDispatcher: CoroutineDispatcher,
@@ -23,6 +24,10 @@ class SaveImagesUseCase(
     /**
      * Saves a list of images to the internal storage of the app. And creates a [DocumentImage] list
      * with the file name.
+     *
+     * When the Document Resizer is enabled every image is compressed to the configured
+     * target file size keeping the best possible quality. Otherwise the image resolution
+     * setting decides between storing the original files and resizing them.
      *
      * @param storageType The type of storage (PERSISTENT or CACHE).
      * @param uris The list of URIs of the images to be saved.
@@ -34,20 +39,33 @@ class SaveImagesUseCase(
         uris: List<Uri>,
         documentId: String
     ): List<File> = withContext(ioDispatcher) {
-        val imageResolution = settingsRepository.userSettings.first().imageResolution
+        val userSettings = settingsRepository.userSettings.first()
 
-        return@withContext if (imageResolution == ImageResolution.ORIGINAL) {
-            fileRepository.saveImageToStorage(
-                storageType = storageType,
-                uris = uris,
-                documentId = documentId
-            )
-        } else {
-            fileRepository.saveResizeRotateImagesToStorage(
-                storageType = storageType,
-                uris = uris,
-                documentId = documentId
-            )
+        return@withContext when {
+            userSettings.isDocumentResizerEnabled -> {
+                fileRepository.saveImagesToTargetSize(
+                    storageType = storageType,
+                    uris = uris,
+                    documentId = documentId,
+                    targetSizeKb = userSettings.documentResizerTargetSizeKb
+                )
+            }
+
+            userSettings.imageResolution == ImageResolution.ORIGINAL -> {
+                fileRepository.saveImageToStorage(
+                    storageType = storageType,
+                    uris = uris,
+                    documentId = documentId
+                )
+            }
+
+            else -> {
+                fileRepository.saveResizeRotateImagesToStorage(
+                    storageType = storageType,
+                    uris = uris,
+                    documentId = documentId
+                )
+            }
         }
     }
 }

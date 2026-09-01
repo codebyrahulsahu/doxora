@@ -302,6 +302,17 @@ Email: %3$s</string>
     <string name="storage_saver_tittle">Storage saver</string>
     <string name="storage_saver_body">Save additional files at a slightly lower quality. Imported PDFs will retain their original quality</string>
 
+    <string name="document_resizer">Document Resizer</string>
+    <string name="document_resizer_toggle_title">Compress documents to a custom size</string>
+    <string name="document_resizer_toggle_body">Each new document page or scan is compressed to the target size while keeping the best possible quality.</string>
+    <string name="document_resizer_target_size">Target size</string>
+    <string name="document_resizer_target_size_body">New documents will be compressed to about %1$s per page or scan.</string>
+    <string name="document_resizer_size_hint">Pick a size between 16 KB and 100 MB. Images that already fit are stored unchanged.</string>
+    <string name="size_in_kb">Size in KB</string>
+    <string name="size_in_mb">Size in MB</string>
+    <string name="kb">KB</string>
+    <string name="mb">MB</string>
+
     <string name="onboarding_welcome_title">Welcome to Doxora</string>
     <string name="onboarding_welcome_description">Centralized document management, designed to make your personal files easier to organize.</string>
     <string name="onboarding_piles_title">Organize with Hubs</string>
