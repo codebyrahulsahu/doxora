@@ -249,7 +249,7 @@ class FileRepositoryImpl(
 
     /**
      * Decodes an image file already stored in the app and compresses it so it
-     * fits [targetBytes].
+     * fits [targetBytes] with zero quality loss.
      *
      * The EXIF rotation of the file is baked into the decoded bitmap before
      * re-encoding, so nothing changes visually when the EXIF data is lost.
@@ -259,7 +259,10 @@ class FileRepositoryImpl(
      * @return The compressed JPEG bytes, or null when the file cannot be decoded.
      */
     private suspend fun compressStoredImageToTargetSize(file: File, targetBytes: Long): ByteArray? {
-        val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: return null
+        val options = BitmapFactory.Options().apply {
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+        val bitmap = BitmapFactory.decodeFile(file.absolutePath, options) ?: return null
         val rotation = imageTransformationHelper.getExifRotation(file)
 
         val finalBitmap = if (rotation != 0) rotateBitmap(bitmap, rotation) else bitmap
@@ -667,10 +670,9 @@ class FileRepositoryImpl(
     /**
      * Helper function to save an image from a URI compressed to a custom target file size.
      *
-     * Keeps the original dimensions and the highest possible quality: the JPEG quality
-     * is reduced only as much as needed to fit [targetBytes], and images that already
-     * fit the target are stored unchanged. Very heavy images are progressively
-     * downscaled as a last resort.
+     * Keeps zero quality loss: the image is always encoded at maximum JPEG
+     * quality. Images that already fit the target are stored unchanged. Larger
+     * images are downscaled (keeping maximum quality) until they fit.
      *
      * @param uri URI of the image to be saved.
      * @param storageDir Directory where the image will be saved.
@@ -728,86 +730,60 @@ class FileRepositoryImpl(
     }
 
     /**
-     * Compresses a [Bitmap] to a JPEG [ByteArray] that fits [targetBytes].
+     * Compresses a [Bitmap] to a JPEG [ByteArray] that fits [targetBytes] with
+     * zero quality loss.
      *
-     * A binary search over the JPEG quality finds the highest quality whose encoded
-     * size is still below the target, so quality is preserved as much as possible.
-     *
-     * The quality is never allowed to drop below [MIN_ACCEPTABLE_JPEG_QUALITY] right
-     * away: heavily quantized JPEGs (quality 1-40) look far worse than a slightly
-     * smaller image saved at a decent quality, so when the target cannot be met at
-     * an acceptable quality the bitmap is progressively downscaled (keeping the
-     * aspect ratio) instead. Only when even the smallest allowed rendering does not
-     * fit is the quality floor finally relaxed as a last resort.
+     * JPEG quality is never reduced: every candidate is encoded at
+     * [MAX_JPEG_QUALITY] (the highest encoder setting). When the full-resolution
+     * encoding exceeds the target, a binary search over the longest side finds
+     * the largest rendering whose maximum-quality encoding still fits, using a
+     * high-quality bilinear filter so the remaining pixels stay sharp.
      *
      * @param source The bitmap to compress (not recycled by this function).
      * @param targetBytes Maximum size in bytes of the result.
      * @return The compressed JPEG bytes.
      */
     private fun compressBitmapToTargetSize(source: Bitmap, targetBytes: Long): ByteArray {
-        var working = source
-        var result = compressToBytes(
-            working,
-            findMaxQuality(working, targetBytes, MIN_ACCEPTABLE_JPEG_QUALITY)
-        )
+        val fullQuality = compressToBytes(source, MAX_JPEG_QUALITY)
+        if (fullQuality.size.toLong() <= targetBytes) return fullQuality
 
-        var attempts = 0
-        while (result.size.toLong() > targetBytes && attempts < MAX_DOWNSCALE_ATTEMPTS) {
-            val newWidth = (working.width * DOWNSCALE_FACTOR).toInt().coerceAtLeast(MIN_IMAGE_SIDE_PIXELS)
-            val newHeight = (working.height * DOWNSCALE_FACTOR).toInt().coerceAtLeast(MIN_IMAGE_SIDE_PIXELS)
-
-            if (newWidth >= working.width || newHeight >= working.height) break
-
-            val scaled = Bitmap.createScaledBitmap(working, newWidth, newHeight, true)
-            if (scaled != working && working != source) working.recycle()
-            working = scaled
-
-            result = compressToBytes(
-                working,
-                findMaxQuality(working, targetBytes, MIN_ACCEPTABLE_JPEG_QUALITY)
-            )
-            attempts++
-        }
-
-        // Last resort for extreme targets: relax the quality floor only when even
-        // the smallest allowed rendering does not fit the requested size.
-        if (result.size.toLong() > targetBytes) {
-            result = compressToBytes(
-                working,
-                findMaxQuality(working, targetBytes, MIN_JPEG_QUALITY)
-            )
-        }
-
-        if (working != source) working.recycle()
-        return result
-    }
-
-    /**
-     * Finds the highest JPEG quality (between [minQuality] and 100) whose encoded
-     * size fits [targetBytes].
-     *
-     * @param bitmap The bitmap to encode.
-     * @param targetBytes Maximum size in bytes.
-     * @param minQuality Lowest quality the search is allowed to return.
-     * @return The best quality value (at least [minQuality]).
-     */
-    private fun findMaxQuality(bitmap: Bitmap, targetBytes: Long, minQuality: Int): Int {
-        var low = minQuality
-        var high = MAX_JPEG_QUALITY
-        var best = minQuality
+        val longestSide = maxOf(source.width, source.height)
+        var low = MIN_IMAGE_SIDE_PIXELS
+        var high = (longestSide - 1).coerceAtLeast(MIN_IMAGE_SIDE_PIXELS)
+        var best = compressScaledToMaxSide(source, MIN_IMAGE_SIDE_PIXELS)
 
         while (low <= high) {
             val mid = (low + high) / 2
-            val size = compressToBytes(bitmap, mid).size.toLong()
-
-            if (size <= targetBytes) {
-                best = mid
+            val encoded = compressScaledToMaxSide(source, mid)
+            if (encoded.size.toLong() <= targetBytes) {
+                best = encoded
                 low = mid + 1
             } else {
                 high = mid - 1
             }
         }
         return best
+    }
+
+    /**
+     * Encodes [source] at maximum JPEG quality after scaling it so that its
+     * longest side is [maxSide] pixels. Aspect ratio is preserved and a
+     * bilinear filter is used so there is no extra quality loss from the
+     * downscale itself.
+     */
+    private fun compressScaledToMaxSide(source: Bitmap, maxSide: Int): ByteArray {
+        val longest = maxOf(source.width, source.height)
+        if (longest <= maxSide) return compressToBytes(source, MAX_JPEG_QUALITY)
+
+        val scale = maxSide.toFloat() / longest.toFloat()
+        val width = (source.width * scale).toInt().coerceAtLeast(1)
+        val height = (source.height * scale).toInt().coerceAtLeast(1)
+        val scaled = Bitmap.createScaledBitmap(source, width, height, true)
+        try {
+            return compressToBytes(scaled, MAX_JPEG_QUALITY)
+        } finally {
+            if (scaled != source) scaled.recycle()
+        }
     }
 
     /**
@@ -944,24 +920,12 @@ class FileRepositoryImpl(
         /** Smallest target size (in bytes) accepted by the Document Resizer. */
         const val MIN_COMPRESSED_IMAGE_BYTES = 16L * 1024L
 
-        /** Lowest JPEG quality used by the Document Resizer, only as a last resort. */
-        const val MIN_JPEG_QUALITY = 1
-
         /**
-         * Lowest JPEG quality considered visually acceptable. Below this the
-         * compression artifacts become clearly visible, so the image is
-         * downscaled instead of degrading the quality any further.
+         * JPEG quality used by the Document Resizer. Always the maximum so
+         * there is zero quality loss from quantization; target size is met by
+         * reducing dimensions only.
          */
-        const val MIN_ACCEPTABLE_JPEG_QUALITY = 60
-
-        /** Highest JPEG quality used by the Document Resizer. */
         const val MAX_JPEG_QUALITY = 100
-
-        /** Scale applied on each downscale step of a very heavy image. */
-        const val DOWNSCALE_FACTOR = 0.85f
-
-        /** How many times the Document Resizer may downscale a very heavy image. */
-        const val MAX_DOWNSCALE_ATTEMPTS = 12
 
         /** Smallest image side (in pixels) kept while downscaling a very heavy image. */
         const val MIN_IMAGE_SIDE_PIXELS = 64

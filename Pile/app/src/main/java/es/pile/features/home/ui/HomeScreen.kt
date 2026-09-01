@@ -236,9 +236,12 @@ fun HomeScreen(
                     onExportFormatSelected = { format -> exportActions.requestExport(format) },
                     onShare = { viewModel.handleEvent(HomeEvent.OnShareSelectedClicked) },
                     onDelete = { showDeleteSelectionAlert = true },
-                    onResizeModeSelected = { mode ->
-                        viewModel.handleEvent(HomeEvent.OnResizeSelectedClicked(mode))
-                    }
+                    onResizeConfirmed = { mode, targetSizeKb ->
+                        viewModel.handleEvent(
+                            HomeEvent.OnResizeSelectedClicked(mode, targetSizeKb)
+                        )
+                    },
+                    initialTargetSizeKb = state.documentResizerTargetSizeKb
                 )
             } else {
                 val horizontalPaddingAnimated by animateDpAsState(

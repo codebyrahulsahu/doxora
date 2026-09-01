@@ -3,6 +3,7 @@ package es.pile.core.domain.useCases
 import es.pile.DocumentImage
 import es.pile.DocumentModel
 import es.pile.core.domain.models.DocumentResizeMode
+import es.pile.core.domain.models.DocumentResizeTargetSize
 import es.pile.core.domain.repositories.BitmapCacheRepository
 import es.pile.core.domain.repositories.DocumentImageRepository
 import es.pile.core.domain.repositories.DocumentModelRepository
@@ -30,10 +31,11 @@ data class DocumentResizeResult(
 /**
  * Use case behind the Document Resizer action shown in the selection top bar.
  *
- * It compresses every page image of the selected documents to the stored
- * target size (keeping the best possible quality) and saves the result either
- * over the original files of the document or as a brand new duplicate
- * document, depending on the chosen [DocumentResizeMode].
+ * It compresses every page image of the selected documents to a custom
+ * target size with zero quality loss (JPEG quality is never reduced; only
+ * dimensions are scaled down when needed) and saves the result either over
+ * the original files of the document or as a brand new duplicate document,
+ * depending on the chosen [DocumentResizeMode].
  *
  * Imported PDFs are skipped: their content is the PDF file itself, so there
  * are no page images to compress.
@@ -47,20 +49,29 @@ class ResizeDocumentsUseCase(
     private val settingsRepository: SettingsRepository
 ) {
     /**
-     * Resizes every document in [documents] with the stored target size.
+     * Resizes every document in [documents] to [targetSizeKb].
      *
      * @param documents The documents selected by the user.
      * @param mode Whether the result replaces the original files in the app or
      * is saved as a duplicate document.
+     * @param targetSizeKb Custom target file size in kilobytes typed in the
+     * resizer prompt. When null, the last stored size is used.
      * @return A [DocumentResizeResult] with how many documents were resized.
      */
     suspend operator fun invoke(
         documents: List<DocumentModel>,
-        mode: DocumentResizeMode
+        mode: DocumentResizeMode,
+        targetSizeKb: Int? = null
     ): DocumentResizeResult = withContext(ioDispatcher) {
-        val targetSizeKb = settingsRepository.userSettings.first()
-            .documentResizerTargetSizeKb
-            .coerceAtLeast(MIN_TARGET_SIZE_KB)
+        val resolvedTargetSizeKb = (
+            targetSizeKb
+                ?: settingsRepository.userSettings.first().documentResizerTargetSizeKb
+            ).coerceAtLeast(DocumentResizeTargetSize.MIN_KB)
+
+        // Remember the custom size so the prompt can pre-fill it next time.
+        if (targetSizeKb != null) {
+            settingsRepository.updateDocumentResizerTargetSizeKb(resolvedTargetSizeKb)
+        }
 
         var resized = 0
         var skipped = 0
@@ -75,10 +86,10 @@ class ResizeDocumentsUseCase(
             val success = runCatching {
                 when (mode) {
                     DocumentResizeMode.SAVE_AS_ORIGINAL ->
-                        resizeInPlace(document, targetSizeKb)
+                        resizeInPlace(document, resolvedTargetSizeKb)
 
                     DocumentResizeMode.SAVE_AS_DUPLICATE ->
-                        resizeAsDuplicate(document, targetSizeKb)
+                        resizeAsDuplicate(document, resolvedTargetSizeKb)
                 }
             }
                 .onFailure { error -> Napier.e("Error resizing document ${document.id}", error) }
@@ -180,8 +191,5 @@ class ResizeDocumentsUseCase(
     companion object {
         /** Appended to the title of every duplicate created by the resizer. */
         private const val DUPLICATE_SUFFIX = "(resized)"
-
-        /** Smallest target size accepted by the Document Resizer, in KB. */
-        private const val MIN_TARGET_SIZE_KB = 16
     }
 }

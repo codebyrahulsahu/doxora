@@ -90,7 +90,12 @@ class PileDetailViewModel(
                     ?.let { path -> fileRepository.getProfilePictureFile(path) }
                     ?.takeIf { file -> file.exists() }
 
-                _state.update { it.copy(hubPictureFile = hubPictureFile) }
+                _state.update {
+                    it.copy(
+                        hubPictureFile = hubPictureFile,
+                        documentResizerTargetSizeKb = settings.documentResizerTargetSizeKb
+                    )
+                }
             }
         }
         viewModelScope.launch {
@@ -187,7 +192,8 @@ class PileDetailViewModel(
 
             PileDetailEvent.OnDeleteSelectedClicked -> deleteSelectedDocuments()
 
-            is PileDetailEvent.OnResizeSelectedClicked -> resizeSelectedDocuments(event.mode)
+            is PileDetailEvent.OnResizeSelectedClicked ->
+                resizeSelectedDocuments(event.mode, event.targetSizeKb)
 
             PileDetailEvent.OnConfirmImport -> {
                 _state.update { it.copy(showDraftWarning = false) }
@@ -497,16 +503,16 @@ class PileDetailViewModel(
     /**
      * Resizes every selected document with the Document Resizer, saving the
      * result over the original files or as duplicate documents depending on
-     * the option chosen in the two-option prompt.
+     * the option chosen in the prompt, at the custom [targetSizeKb].
      */
-    private fun resizeSelectedDocuments(mode: DocumentResizeMode) {
+    private fun resizeSelectedDocuments(mode: DocumentResizeMode, targetSizeKb: Int) {
         viewModelScope.launch {
             val documents = selectedDocuments()
             if (documents.isEmpty()) return@launch
 
             _state.update { it.copy(isSelectionWorking = true) }
 
-            val result = resizeDocumentsUseCase(documents, mode)
+            val result = resizeDocumentsUseCase(documents, mode, targetSizeKb)
 
             _state.update {
                 it.copy(
